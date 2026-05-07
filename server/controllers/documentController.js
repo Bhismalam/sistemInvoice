@@ -1,5 +1,7 @@
 const Document = require('../models/Document');
+const Receipt = require('../models/Receipt');
 const ActivityLog = require('../models/ActivityLog');
+const PaymentReminder = require('../models/PaymentReminder');
 const { v4: uuidv4 } = require('uuid');
 
 const documentController = {
@@ -22,6 +24,11 @@ const documentController = {
 
       const doc = await Document.create(data);
       await ActivityLog.log(req.user.id, doc.id, `Created ${data.transaction_type} ${data.document_type}`);
+      
+      // Auto-generate payment reminders for invoices
+      if (data.document_type === 'invoice' && data.status === 'sent') {
+        await PaymentReminder.autoGenerateReminders(req.user.id, doc.id);
+      }
       
       res.status(201).json({ success: true, message: 'Dokumen berhasil dibuat!', data: doc });
     } catch (error) {
@@ -101,7 +108,87 @@ const documentController = {
       
       const updated = await Document.updateStatus(req.params.id, req.user.id, status);
       await ActivityLog.log(req.user.id, updated.id, `Changed status to ${status}`);
+
+      // Auto-generate reminders when invoice is sent
+      if (status === 'sent' && existing.document_type === 'invoice') {
+        await PaymentReminder.autoGenerateReminders(req.user.id, updated.id);
+      }
+
       res.json({ success: true, message: `Status berhasil diubah menjadi ${status}`, data: updated });
+    } catch (error) { next(error); }
+  },
+
+  // Process payment: update status + create receipt + send to kuitansi
+  async processPayment(req, res, next) {
+    try {
+      const { payment_method, payment_date, notes } = req.body;
+      const existing = await Document.findById(req.params.id, req.user.id);
+      if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
+      
+      if (existing.status === 'paid') {
+        return res.status(400).json({ success: false, message: 'Dokumen sudah lunas.' });
+      }
+      if (existing.status === 'cancelled') {
+        return res.status(400).json({ success: false, message: 'Dokumen yang dibatalkan tidak dapat dibayar.' });
+      }
+
+      // Create receipt automatically
+      const receiptNumber = `RCP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const receipt = await Receipt.create({
+        user_id: req.user.id,
+        document_id: existing.id,
+        receipt_number: receiptNumber,
+        amount: parseFloat(existing.total),
+        payment_method: payment_method || 'transfer',
+        payment_date: payment_date || new Date().toISOString().split('T')[0],
+        notes: notes || `Pembayaran untuk ${existing.document_number}`
+      });
+
+      // The Receipt.create already updates document status to 'paid' if amount >= total
+      const updated = await Document.findById(req.params.id, req.user.id);
+      
+      await ActivityLog.log(req.user.id, updated.id, 
+        `Payment processed: ${existing.transaction_type === 'sales' ? 'Invoice penjualan dibayar oleh pelanggan' : 'Invoice pembelian dibayar ke supplier'}`);
+
+      const statusLabel = existing.transaction_type === 'sales' 
+        ? 'Invoice telah dibayar dan masuk ke Kuitansi Penjualan.' 
+        : 'Invoice telah dibayar dan masuk ke Kuitansi Pembelian dengan status Lunas.';
+
+      res.json({ 
+        success: true, 
+        message: statusLabel, 
+        data: { document: updated, receipt } 
+      });
+    } catch (error) { next(error); }
+  },
+
+  // Cancel document with 24h auto-delete timer
+  async cancelDocument(req, res, next) {
+    try {
+      const existing = await Document.findById(req.params.id, req.user.id);
+      if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
+      
+      if (existing.status === 'paid') {
+        return res.status(400).json({ success: false, message: 'Dokumen yang sudah lunas tidak dapat dibatalkan.' });
+      }
+
+      const updated = await Document.cancelDocument(req.params.id, req.user.id);
+      await ActivityLog.log(req.user.id, updated.id, 'Document cancelled - will be auto-deleted in 24 hours');
+
+      res.json({ 
+        success: true, 
+        message: 'Dokumen dibatalkan. Invoice akan dihapus otomatis dalam 24 jam.', 
+        data: updated 
+      });
+    } catch (error) { next(error); }
+  },
+
+  // Get payment tracking info
+  async getPaymentTracker(req, res, next) {
+    try {
+      const tracker = await Document.getPaymentTracker(req.params.id, req.user.id);
+      if (!tracker) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
+      res.json({ success: true, data: tracker });
     } catch (error) { next(error); }
   },
 

@@ -42,6 +42,10 @@ export function renderLayout(container, activePage) {
                 <span class="nav-item__icon">🧾</span>
                 <span class="nav-item__text">Kuitansi Penjualan</span>
               </a>
+              <a href="#/sales/debts" class="nav-item ${currentPath.startsWith('#/sales/debts') ? 'active' : ''}">
+                <span class="nav-item__icon">💳</span>
+                <span class="nav-item__text">Piutang & Pengingat</span>
+              </a>
             </div>
           </div>
 
@@ -64,6 +68,10 @@ export function renderLayout(container, activePage) {
               <a href="#/purchases/receipts" class="nav-item ${currentPath.startsWith('#/purchases/receipts') ? 'active' : ''}">
                 <span class="nav-item__icon">🧾</span>
                 <span class="nav-item__text">Kuitansi Pembelian</span>
+              </a>
+              <a href="#/purchases/debts" class="nav-item ${currentPath.startsWith('#/purchases/debts') ? 'active' : ''}">
+                <span class="nav-item__icon">💳</span>
+                <span class="nav-item__text">Manajemen Hutang</span>
               </a>
             </div>
           </div>
@@ -112,9 +120,20 @@ export function renderLayout(container, activePage) {
           <button class="header__toggle" id="theme-btn" title="Ganti Tema">
             ${localStorage.getItem('theme') === 'light' ? '🌙' : '☀️'}
           </button>
-          <button class="header__notification" id="notification-btn">
-            🔔<span class="header__notification-dot"></span>
-          </button>
+          <div class="header__notification-wrapper" style="position:relative;">
+            <button class="header__notification" id="notification-btn">
+              🔔<span class="header__notification-dot" id="notification-badge" style="display:none;"></span>
+            </button>
+            <div class="notification-dropdown" id="notification-dropdown">
+              <div class="notification-header">
+                <h3>Notifikasi</h3>
+                <button class="notification-mark-read" id="notification-mark-read" style="display:none;">Tandai dibaca</button>
+              </div>
+              <div class="notification-list" id="notification-list">
+                <div class="notification-empty">Memuat...</div>
+              </div>
+            </div>
+          </div>
           <button class="header__profile" id="profile-btn">
             <div class="header__avatar">${getInitials(user.name || 'U')}</div>
             <span class="header__username">${user.name || 'User'}</span>
@@ -208,8 +227,6 @@ export function renderLayout(container, activePage) {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       const group = btn.closest('.nav-group');
-      // Optional: close other open groups
-      // container.querySelectorAll('.nav-group.open').forEach(g => { if(g !== group) g.classList.remove('open'); });
       group.classList.toggle('open');
       
       // If sidebar is collapsed, open it when a dropdown is clicked
@@ -218,6 +235,93 @@ export function renderLayout(container, activePage) {
         document.getElementById('sidebar-toggle')?.click();
       }
     });
+  });
+
+  // Notifications logic
+  const notifBtn = document.getElementById('notification-btn');
+  const notifDropdown = document.getElementById('notification-dropdown');
+  const notifList = document.getElementById('notification-list');
+  const notifBadge = document.getElementById('notification-badge');
+  const markReadBtn = document.getElementById('notification-mark-read');
+  let notificationsLoaded = false;
+
+  const fetchNotifications = async () => {
+    try {
+      const { api } = await import('../utils/api.js');
+      const { timeAgo } = await import('../utils/format.js');
+      const res = await api('/notifications');
+      
+      if (res.success && res.data) {
+        const { notifications, unreadCount } = res.data;
+        
+        // Update badge
+        if (unreadCount > 0) {
+          notifBadge.style.display = 'block';
+          markReadBtn.style.display = 'block';
+        } else {
+          notifBadge.style.display = 'none';
+          markReadBtn.style.display = 'none';
+        }
+
+        // Render list
+        if (notifications.length === 0) {
+          notifList.innerHTML = '<div class="notification-empty">Belum ada notifikasi baru</div>';
+        } else {
+          notifList.innerHTML = notifications.map(n => {
+            let iconClass = 'create';
+            let iconStr = '➕';
+            const actionStr = n.action.toLowerCase();
+            if (actionStr.includes('update') || actionStr.includes('changed status')) { iconClass = 'update'; iconStr = '✏️'; }
+            if (actionStr.includes('delete') || actionStr.includes('cancel')) { iconClass = 'delete'; iconStr = '🗑️'; }
+            if (actionStr.includes('payment') || actionStr.includes('receipt')) { iconClass = 'payment'; iconStr = '💰'; }
+
+            return `
+              <div class="notification-item">
+                <div class="notification-icon ${iconClass}">${iconStr}</div>
+                <div class="notification-content">
+                  <div class="notification-text">${n.action}</div>
+                  <div class="notification-time">${timeAgo(n.created_at)}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+        notificationsLoaded = true;
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      notifList.innerHTML = '<div class="notification-empty">Gagal memuat notifikasi</div>';
+    }
+  };
+
+  // Fetch initially to get the badge count
+  if (notifBtn) fetchNotifications();
+
+  notifBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifDropdown.classList.toggle('open');
+    if (notifDropdown.classList.contains('open') && !notificationsLoaded) {
+      fetchNotifications();
+    }
+  });
+
+  notifDropdown?.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('click', (e) => {
+    if (notifDropdown?.classList.contains('open') && !notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+      notifDropdown.classList.remove('open');
+    }
+  });
+
+  markReadBtn?.addEventListener('click', async () => {
+    try {
+      const { api } = await import('../utils/api.js');
+      await api('/notifications/read', { method: 'POST' });
+      notifBadge.style.display = 'none';
+      markReadBtn.style.display = 'none';
+    } catch (err) {
+      console.error('Error marking as read:', err);
+    }
   });
 
   return document.getElementById('page-content');

@@ -62,11 +62,21 @@ export async function api(endpoint, options = {}) {
   let res = await fetch(url, config);
 
   // Auto refresh on 401
-  if (res.status === 401 && refreshToken) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-      res = await fetch(url, config);
+  if (res.status === 401) {
+    if (refreshToken) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        config.headers['Authorization'] = `Bearer ${accessToken}`;
+        res = await fetch(url, config);
+      } else {
+        clearTokens();
+        window.location.hash = '#/login';
+        throw new Error('Sesi telah berakhir, silakan login kembali.');
+      }
+    } else {
+      clearTokens();
+      window.location.hash = '#/login';
+      throw new Error('Sesi telah berakhir, silakan login kembali.');
     }
   }
 

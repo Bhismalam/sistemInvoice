@@ -27,8 +27,9 @@ export class Router {
 
   navigate(path) {
     if (path) window.location.hash = path;
-    const hash = window.location.hash.slice(1) || '/login';
-    const hashParts = hash.split('/').filter(Boolean);
+    const fullHash = window.location.hash.slice(1) || '/login';
+    const hashPath = fullHash.split('?')[0]; // Strip query params for routing
+    const hashParts = hashPath.split('/').filter(Boolean);
     const firstSegment = '/' + (hashParts[0] || 'login');
 
     // Check auth
@@ -46,7 +47,7 @@ export class Router {
     }
 
     // Find matching route — try EXACT match first (e.g. /invoices/new)
-    let handler = this.routes[hash];
+    let handler = this.routes[hashPath];
     let routeParams = {};
 
     if (!handler) {

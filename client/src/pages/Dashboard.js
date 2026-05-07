@@ -57,8 +57,12 @@ async function loadDashboardData() {
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
           <span class="stat-card__icon" style="background:var(--success-bg);color:var(--success)">💰</span>
         </div>
-        <div class="stat-card__label">Total Revenue</div>
-        <div class="stat-card__value text-success">${formatCurrency(s.total_revenue)}</div>
+        <div class="stat-card__label">Keuangan (Profit)</div>
+        <div class="stat-card__value text-success">${formatCurrency(s.net_profit)}</div>
+        <div style="font-size: 0.8rem; margin-top: 8px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+          <div class="flex justify-between"><span>Penjualan:</span> <span class="text-success">${formatCurrency(s.total_revenue)}</span></div>
+          <div class="flex justify-between"><span>Pembelian:</span> <span class="text-danger">${formatCurrency(s.total_expense)}</span></div>
+        </div>
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
@@ -66,6 +70,10 @@ async function loadDashboardData() {
         </div>
         <div class="stat-card__label">Outstanding</div>
         <div class="stat-card__value text-warning">${formatCurrency(s.outstanding)}</div>
+        <div style="font-size: 0.8rem; margin-top: 8px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+          <div class="flex justify-between"><span>Piutang (Jual):</span> <span class="text-warning">${formatCurrency(s.outstanding_sales)}</span></div>
+          <div class="flex justify-between"><span>Hutang (Beli):</span> <span class="text-warning">${formatCurrency(s.outstanding_purchase)}</span></div>
+        </div>
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
@@ -73,6 +81,10 @@ async function loadDashboardData() {
         </div>
         <div class="stat-card__label">Overdue</div>
         <div class="stat-card__value text-danger">${formatCurrency(s.overdue)}</div>
+        <div style="font-size: 0.8rem; margin-top: 8px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+          <div class="flex justify-between"><span>Penjualan:</span> <span class="text-danger">${formatCurrency(s.overdue_sales)}</span></div>
+          <div class="flex justify-between"><span>Pembelian:</span> <span class="text-danger">${formatCurrency(s.overdue_purchase)}</span></div>
+        </div>
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
@@ -80,6 +92,10 @@ async function loadDashboardData() {
         </div>
         <div class="stat-card__label">Total Invoice</div>
         <div class="stat-card__value">${counts.total}</div>
+        <div style="font-size: 0.8rem; margin-top: 8px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+          <div class="flex justify-between"><span>Penjualan:</span> <span class="text-info">${s.total_invoices_sales || 0}</span></div>
+          <div class="flex justify-between"><span>Pembelian:</span> <span class="text-info">${s.total_invoices_purchase || 0}</span></div>
+        </div>
       </div>
     `;
 
@@ -122,6 +138,8 @@ async function loadDashboardData() {
       </div>
     `;
   } catch (err) {
-    document.getElementById('stat-cards').innerHTML = '<div class="stat-card"><p class="text-danger">Gagal memuat data</p></div>';
+    document.getElementById('stat-cards').innerHTML = '<div class="stat-card" style="grid-column: 1 / -1;"><p class="text-danger" style="text-align:center;">Gagal memuat data keuangan. Harap refresh halaman atau login ulang.</p></div>';
+    document.getElementById('recent-invoices').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
+    document.getElementById('status-breakdown').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
   }
 }

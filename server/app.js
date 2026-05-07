@@ -17,8 +17,11 @@ const receiptRoutes = require('./routes/receipts');
 const paymentRoutes = require('./routes/payments');
 const contactRoutes = require('./routes/contacts');
 const productRoutes = require('./routes/products');
+const debtRoutes = require('./routes/debts');
 const { dashboardRouter, reportRouter, settingsRouter } = require('./routes/dashboard');
 const documentController = require('./controllers/documentController');
+
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -29,9 +32,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
-const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { success: false, message: 'Terlalu banyak request. Coba lagi nanti.' } });
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { success: false, message: 'Terlalu banyak percobaan. Coba lagi nanti.' } });
+// Rate limiting (disabled in test mode)
+const isTest = process.env.NODE_ENV === 'test';
+const noopLimiter = (req, res, next) => next();
+const generalLimiter = isTest ? noopLimiter : rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { success: false, message: 'Terlalu banyak request. Coba lagi nanti.' } });
+const authLimiter = isTest ? noopLimiter : rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { success: false, message: 'Terlalu banyak percobaan. Coba lagi nanti.' } });
 
 app.use(generalLimiter);
 
@@ -62,9 +67,41 @@ app.use('/api/documents', authenticate, documentRoutes);
 app.use('/api/receipts', authenticate, receiptRoutes);
 app.use('/api/contacts', authenticate, contactRoutes);
 app.use('/api/products', authenticate, productRoutes);
+app.use('/api/debts', authenticate, debtRoutes);
 app.use('/api/dashboard', authenticate, dashboardRouter);
 app.use('/api/reports', authenticate, reportRouter);
 app.use('/api/settings', authenticate, settingsRouter);
+app.use('/api/notifications', authenticate, notificationRoutes);
+
+// === BACKGROUND SCHEDULER === (skip in test mode)
+if (process.env.NODE_ENV !== 'test') {
+  const Document = require('./models/Document');
+  const PaymentReminder = require('./models/PaymentReminder');
+
+  setInterval(async () => {
+    try {
+      const deleted = await Document.cleanupCancelledDocuments();
+      const overdue = await Document.markOverdueDocuments();
+      const reminders = await PaymentReminder.processPendingReminders();
+      if (deleted > 0 || overdue > 0 || reminders > 0) {
+        console.log(`⏰ Scheduler: ${deleted} cancelled deleted, ${overdue} marked overdue, ${reminders} reminders processed`);
+      }
+    } catch (err) {
+      console.error('Scheduler error:', err.message);
+    }
+  }, 60 * 60 * 1000);
+
+  setTimeout(async () => {
+    try {
+      await Document.cleanupCancelledDocuments();
+      await Document.markOverdueDocuments();
+      await PaymentReminder.processPendingReminders();
+      console.log('⏰ Initial scheduler run complete');
+    } catch (err) {
+      console.error('Initial scheduler error:', err.message);
+    }
+  }, 5000);
+}
 
 // === ERROR HANDLING ===
 app.use((req, res) => {

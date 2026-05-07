@@ -5,7 +5,7 @@ const { getPool } = require('../config/database');
 
 // Create Core API instance
 let snap = new midtransClient.Snap({
-  isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+  isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true', // boolean
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY
 });
@@ -15,35 +15,31 @@ const paymentController = {
     try {
       const { document_id } = req.body;
       const doc = await Document.findById(document_id, req.user.id);
-      
+
       if (!doc) {
         return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       }
 
-      if (doc.status === 'paid') {
-        return res.status(400).json({ success: false, message: 'Dokumen sudah lunas.' });
+      const transaction = await createMidtransTransaction(doc);
+      res.json({ success: true, data: transaction });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createPublicCharge(req, res, next) {
+    try {
+      const { payment_link } = req.body;
+      if (!payment_link) return res.status(400).json({ success: false, message: 'Payment link required.' });
+
+      const doc = await Document.findByPaymentLink(payment_link);
+
+      if (!doc) {
+        return res.status(404).json({ success: false, message: 'Invoice tidak valid.' });
       }
 
-      const parameter = {
-        transaction_details: {
-          order_id: `INV-${doc.id}-${Date.now()}`,
-          gross_amount: doc.total
-        },
-        customer_details: {
-          first_name: doc.contact_name || 'Customer',
-          email: doc.contact_email || 'customer@example.com'
-        },
-        item_details: doc.items.map(item => ({
-          id: item.id,
-          price: item.unit_price,
-          quantity: item.quantity,
-          name: item.description.substring(0, 50)
-        }))
-      };
-
-      const transaction = await snap.createTransaction(parameter);
-      
-      res.json({ success: true, data: { token: transaction.token, redirect_url: transaction.redirect_url } });
+      const transaction = await createMidtransTransaction(doc);
+      res.json({ success: true, data: transaction });
     } catch (error) {
       next(error);
     }
@@ -61,30 +57,122 @@ const paymentController = {
       if (parts.length < 3) return res.status(400).send('Invalid Order ID');
       const docId = parseInt(parts[1]);
 
-      if (transactionStatus == 'capture') {
-        if (fraudStatus == 'challenge') {
-          // TODO set transaction status on your database to 'challenge'
-        } else if (fraudStatus == 'accept') {
+      if (transactionStatus === 'capture') {
+        if (fraudStatus === 'accept') {
           await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
         }
-      } else if (transactionStatus == 'settlement') {
+        // fraudStatus === 'challenge': biarkan pending, tangani manual di dashboard Midtrans
+      } else if (transactionStatus === 'settlement') {
         await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
-      } else if (transactionStatus == 'cancel' || transactionStatus == 'deny' || transactionStatus == 'expire') {
-        // TODO set transaction status on your database to 'failure'
-      } else if (transactionStatus == 'pending') {
-        // TODO set transaction status on your database to 'pending'
       }
+      // 'cancel', 'deny', 'expire', 'pending': tidak perlu action untuk sekarang
 
       res.status(200).json({ success: true });
     } catch (error) {
       console.error('Webhook error:', error);
       res.status(500).json({ success: false });
     }
+  },
+
+  async getStatus(req, res, next) {
+    try {
+      const { orderId } = req.params;
+      const statusResponse = await snap.transaction.status(orderId);
+
+      // If status is settlement or capture, ensure document is marked as paid
+      if (statusResponse.transaction_status === 'settlement' || statusResponse.transaction_status === 'capture') {
+        const parts = orderId.split('-');
+        if (parts.length >= 3) {
+          const docId = parseInt(parts[1]);
+          await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
+        }
+      }
+
+      res.json({ success: true, data: statusResponse });
+    } catch (error) {
+      if (error.httpStatusCode === 404) {
+        return res.json({ success: false, message: 'Transaksi tidak ditemukan.' });
+      }
+      next(error);
+    }
   }
 };
 
+async function createMidtransTransaction(doc) {
+  if (doc.status === 'paid') {
+    throw new Error('Dokumen sudah lunas.');
+  }
+
+  // RETURN CACHED TOKEN IF EXISTS
+  // Note: Simple caching, assumes token is still valid (usually 24h)
+  if (doc.midtrans_token) {
+    return { token: doc.midtrans_token, cached: true };
+  }
+
+  // Ensure items have integer quantities and prices
+  const items = doc.items.map(item => ({
+    id: `item-${item.id}`,
+    price: Math.round(item.unit_price),
+    quantity: Math.round(item.quantity) || 1,
+    name: item.description.substring(0, 50)
+  }));
+
+  // Include Tax as an item line
+  if (doc.tax_amount && parseFloat(doc.tax_amount) > 0) {
+    items.push({
+      id: 'tax',
+      price: Math.round(doc.tax_amount),
+      quantity: 1,
+      name: `PPN (${doc.tax_percent}%)`
+    });
+  }
+
+  // Include Discount as a negative item line
+  if (doc.discount_amount && parseFloat(doc.discount_amount) > 0) {
+    items.push({
+      id: 'discount',
+      price: -Math.round(doc.discount_amount),
+      quantity: 1,
+      name: `Diskon (${doc.discount_percent}%)`
+    });
+  }
+
+  const grossAmount = Math.round(doc.total);
+  const currentSum = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const diff = grossAmount - currentSum;
+
+  // Final adjustment for rounding differences
+  if (diff !== 0) {
+    items.push({
+      id: 'adjustment',
+      price: diff,
+      quantity: 1,
+      name: 'Penyesuaian Pembulatan'
+    });
+  }
+
+  const parameter = {
+    transaction_details: {
+      order_id: `INV-${doc.id}-${Date.now()}`,
+      gross_amount: grossAmount
+    },
+    customer_details: {
+      first_name: doc.contact_name || 'Customer',
+      email: doc.contact_email || 'customer@example.com'
+    },
+    item_details: items
+  };
+
+  const transaction = await snap.createTransaction(parameter);
+  
+  // SAVE TOKEN TO DATABASE FOR CACHING
+  const pool = getPool();
+  await pool.execute('UPDATE documents SET midtrans_token = ? WHERE id = ?', [transaction.token, doc.id]);
+  
+  return { token: transaction.token, redirect_url: transaction.redirect_url };
+}
+
 async function markAsPaid(docId, amount, paymentMethod) {
-  // Only update if not already paid
   const pool = getPool();
   const [rows] = await pool.execute('SELECT * FROM documents WHERE id = ?', [docId]);
   const doc = rows[0];

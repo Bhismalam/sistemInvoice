@@ -247,6 +247,100 @@ const Document = {
       [userId, `%${keyword}%`, `%${keyword}%`]
     );
     return rows;
+  },
+
+  // Cancel a document and mark cancellation time for 24h auto-delete
+  async cancelDocument(id, userId) {
+    const pool = getPool();
+    await pool.execute(
+      "UPDATE documents SET status = 'cancelled', cancelled_at = NOW() WHERE id = ? AND user_id = ?",
+      [id, userId]
+    );
+    return this.findById(id, userId);
+  },
+
+  // Update payment status with enhanced logic
+  async updatePaymentStatus(id, userId, paymentStatus) {
+    const pool = getPool();
+    let sql = 'UPDATE documents SET status = ?';
+    const params = [paymentStatus];
+
+    if (paymentStatus === 'paid') {
+      sql += ', paid_at = NOW(), cancelled_at = NULL';
+    } else if (paymentStatus === 'cancelled') {
+      sql += ', cancelled_at = NOW()';
+    } else {
+      sql += ', cancelled_at = NULL';
+    }
+    sql += ' WHERE id = ? AND user_id = ?';
+    params.push(id, userId);
+
+    await pool.execute(sql, params);
+    return this.findById(id, userId);
+  },
+
+  // Auto-delete cancelled invoices older than 24 hours
+  async cleanupCancelledDocuments() {
+    const pool = getPool();
+    const [rows] = await pool.execute(`
+      SELECT id, user_id, document_number FROM documents 
+      WHERE status = 'cancelled' 
+        AND cancelled_at IS NOT NULL 
+        AND cancelled_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    `);
+
+    for (const doc of rows) {
+      await pool.execute('DELETE FROM documents WHERE id = ?', [doc.id]);
+      console.log(`🗑️ Auto-deleted cancelled document: ${doc.document_number}`);
+    }
+    return rows.length;
+  },
+
+  // Auto-mark overdue documents
+  async markOverdueDocuments() {
+    const pool = getPool();
+    const [result] = await pool.execute(`
+      UPDATE documents SET status = 'overdue' 
+      WHERE status = 'sent' AND due_date < CURDATE() AND document_type = 'invoice'
+    `);
+    return result.affectedRows;
+  },
+
+  // Get payment tracking info for an invoice
+  async getPaymentTracker(id, userId) {
+    const pool = getPool();
+    const doc = await this.findById(id, userId);
+    if (!doc) return null;
+
+    // Get receipt payments 
+    const [receipts] = await pool.execute(
+      `SELECT * FROM receipts WHERE document_id = ? ORDER BY created_at DESC`,
+      [id]
+    );
+
+    // Get reminders
+    const [reminders] = await pool.execute(
+      `SELECT * FROM payment_reminders WHERE document_id = ? AND user_id = ? ORDER BY reminder_date ASC`,
+      [id, userId]
+    );
+
+    const totalPaid = receipts.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+    const remaining = parseFloat(doc.total) - totalPaid;
+    const dueDate = new Date(doc.due_date);
+    const now = new Date();
+    const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+
+    return {
+      document: doc,
+      receipts,
+      reminders,
+      totalPaid,
+      remaining,
+      daysUntilDue,
+      isOverdue: daysUntilDue < 0 && doc.status !== 'paid',
+      isPaid: doc.status === 'paid',
+      percentPaid: doc.total > 0 ? Math.min(100, Math.round((totalPaid / parseFloat(doc.total)) * 100)) : 0
+    };
   }
 };
 

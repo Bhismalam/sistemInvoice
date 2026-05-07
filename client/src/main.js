@@ -2,6 +2,8 @@ import './styles/index.css';
 import './styles/auth.css';
 import './styles/layout.css';
 import { Router } from './router.js';
+ 
+// Initialize Theme
 
 // Initialize Theme
 const isLightMode = localStorage.getItem('theme') === 'light';
@@ -17,6 +19,7 @@ import { renderDocumentList } from './pages/DocumentList.js';
 import { renderDocumentCreate } from './pages/DocumentCreate.js';
 import { renderDocumentDetail } from './pages/DocumentDetail.js';
 import { renderReceiptList } from './pages/ReceiptList.js';
+import { renderDebtManagement } from './pages/DebtManagement.js';
 import { renderContacts } from './pages/Contacts.js';
 import { renderProducts } from './pages/Products.js';
 import { renderReports } from './pages/Reports.js';
@@ -37,6 +40,7 @@ router
   .add('/sales/invoices/new', (c) => renderDocumentCreate(c, { transactionType: 'sales', documentType: 'invoice' }))
   .add('/sales/invoices/:id', renderDocumentDetail)
   .add('/sales/receipts', (c) => renderReceiptList(c, { transactionType: 'sales' }))
+  .add('/sales/debts', (c) => renderDebtManagement(c, { transactionType: 'sales' }))
   // Purchases routes
   .add('/purchases/orders', (c) => renderDocumentList(c, { transactionType: 'purchase', documentType: 'order' }))
   .add('/purchases/orders/new', (c) => renderDocumentCreate(c, { transactionType: 'purchase', documentType: 'order' }))
@@ -45,6 +49,7 @@ router
   .add('/purchases/invoices/new', (c) => renderDocumentCreate(c, { transactionType: 'purchase', documentType: 'invoice' }))
   .add('/purchases/invoices/:id', renderDocumentDetail)
   .add('/purchases/receipts', (c) => renderReceiptList(c, { transactionType: 'purchase' }))
+  .add('/purchases/debts', (c) => renderDebtManagement(c, { transactionType: 'purchase' }))
   // Other routes
   .add('/contacts', renderContacts)
   .add('/products', renderProducts)

@@ -351,3 +351,194 @@ body.light-mode {
 
 /* Page loading */
 .page-loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+
+/* === PAYMENT WORKFLOW === */
+
+/* Due Date Warnings */
+.due-warning {
+  display: flex; align-items: flex-start; gap: var(--space-base);
+  padding: var(--space-base) var(--space-xl);
+  border-radius: var(--radius-lg); margin-bottom: var(--space-xl);
+  animation: slideUp 0.3s ease-out;
+}
+.due-warning__icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+.due-warning p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+.due-warning strong { font-size: 0.95rem; }
+
+.due-warning--overdue {
+  background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.due-warning--urgent {
+  background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+  border: 1px solid rgba(245,158,11,0.3);
+}
+.due-warning--soon {
+  background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.03));
+  border: 1px solid rgba(59,130,246,0.2);
+}
+.due-warning--cancelled {
+  background: linear-gradient(135deg, rgba(148,163,184,0.1), rgba(148,163,184,0.03));
+  border: 1px solid rgba(148,163,184,0.2);
+}
+
+/* Payment Status Box */
+.payment-status-box {
+  display: flex; align-items: center; gap: var(--space-base);
+  padding: var(--space-base) var(--space-lg);
+  border-radius: var(--radius-md); margin-bottom: var(--space-sm);
+}
+.payment-status-box p { font-size: 0.85rem; margin-top: 4px; }
+.payment-status-box strong { font-size: 0.9rem; }
+.payment-status-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+.payment-status-box--paid {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04));
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.payment-status-box--cancelled {
+  background: linear-gradient(135deg, rgba(148,163,184,0.08), rgba(148,163,184,0.02));
+  border: 1px solid rgba(148,163,184,0.15);
+}
+
+/* Payment Method Box */
+.payment-method-box {
+  padding: var(--space-base); border-radius: var(--radius-md);
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+}
+
+/* Payment Progress Bar */
+.payment-progress { margin-bottom: var(--space-base); }
+.payment-progress__bar {
+  height: 8px; border-radius: var(--radius-full);
+  background: var(--bg-primary); overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.payment-progress__fill {
+  height: 100%; border-radius: var(--radius-full);
+  background: var(--gradient-success);
+  transition: width 0.6s ease;
+  min-width: 0;
+}
+
+/* Reminder Items */
+.reminder-item {
+  display: flex; align-items: center; gap: var(--space-md);
+  padding: var(--space-md) var(--space-base);
+  border-radius: var(--radius-sm);
+  border-bottom: 1px solid var(--border-color-light);
+  transition: background var(--transition-fast);
+}
+.reminder-item:hover { background: var(--bg-glass-light); }
+.reminder-item__icon { font-size: 1rem; flex-shrink: 0; }
+.reminder-item__content { flex: 1; }
+.reminder-item__content p { font-size: 0.85rem; margin-bottom: 2px; }
+.reminder-item__content span { font-size: 0.75rem; }
+.reminder-item--sent { opacity: 0.5; }
+.reminder-item--missed .reminder-item__content p { color: var(--danger); }
+
+/* Due Badge (inline in tables) */
+.due-badge {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: 0.7rem; font-weight: 600; margin-left: 6px;
+}
+.due-badge--overdue { background: var(--danger-bg); color: var(--danger); }
+.due-badge--soon { background: var(--warning-bg); color: var(--warning); }
+
+/* Row Highlighting */
+.row-overdue { background: rgba(239,68,68,0.05) !important; }
+.row-overdue:hover { background: rgba(239,68,68,0.08) !important; }
+.row-due-soon { background: rgba(245,158,11,0.04) !important; }
+.row-due-soon:hover { background: rgba(245,158,11,0.07) !important; }
+
+/* Success Button */
+.btn-success {
+  background: linear-gradient(135deg, #10B981, #34D399);
+  color: #fff; box-shadow: 0 2px 12px rgba(16,185,129,0.2);
+}
+.btn-success:hover { box-shadow: 0 4px 20px rgba(16,185,129,0.35); }
+
+/* Danger Outline Button */
+.btn-danger-outline {
+  background: transparent; color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.btn-danger-outline:hover { background: var(--danger-bg); border-color: rgba(239,68,68,0.5); }
+
+/* === DEBT MANAGEMENT === */
+
+/* Summary Grid */
+.debt-summary-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-xl);
+}
+
+/* Debt Card */
+.debt-card {
+  display: flex; align-items: flex-start; gap: var(--space-lg);
+  padding: var(--space-xl); border-radius: var(--radius-lg);
+  background: var(--gradient-card); border: 1px solid var(--border-color);
+  position: relative; overflow: hidden;
+  transition: all var(--transition-base);
+}
+.debt-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.debt-card__icon { font-size: 2rem; flex-shrink: 0; margin-top: 4px; }
+.debt-card__content { flex: 1; }
+.debt-card__label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+.debt-card__amount { font-size: 1.5rem; font-weight: 700; margin: 6px 0; }
+.debt-card__detail { font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: var(--space-sm); }
+.debt-card__badge {
+  position: absolute; top: var(--space-md); right: var(--space-md);
+  padding: 4px 10px; border-radius: var(--radius-full);
+  font-size: 0.7rem; font-weight: 600;
+}
+.debt-card__badge--danger { background: var(--danger-bg); color: var(--danger); }
+.debt-card__badge--warning { background: var(--warning-bg); color: var(--warning); }
+
+.debt-card--danger { border-left: 3px solid var(--danger); }
+.debt-card--warning { border-left: 3px solid var(--warning); }
+.debt-card--info { border-left: 3px solid var(--accent-primary); }
+
+/* Debt Section */
+.debt-section__title {
+  display: flex; align-items: center; gap: var(--space-md);
+  font-size: 0.95rem; font-weight: 600; padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-color); margin-bottom: var(--space-md);
+}
+.debt-section__title--danger { color: var(--danger); }
+.debt-section__title--warning { color: var(--warning); }
+
+/* Reminder Card */
+.reminder-card {
+  display: flex; align-items: center; gap: var(--space-base);
+  padding: var(--space-base) var(--space-lg);
+  border-radius: var(--radius-md); margin-bottom: var(--space-sm);
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+.reminder-card:hover { border-color: var(--accent-primary); background: var(--bg-secondary); }
+.reminder-card__icon { font-size: 1.3rem; flex-shrink: 0; }
+.reminder-card__body { flex: 1; }
+.reminder-card__message { font-size: 0.875rem; font-weight: 500; margin-bottom: 4px; }
+.reminder-card__meta { font-size: 0.8rem; display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+.reminder-card__amount { font-size: 1rem; font-weight: 700; color: var(--accent-primary); white-space: nowrap; }
+
+/* Reminder Section */
+.reminder-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* Grid Sidebar */
+.grid-sidebar {
+  display: grid; grid-template-columns: 1fr 340px; gap: var(--space-xl);
+}
+@media (max-width: 1024px) {
+  .grid-sidebar { grid-template-columns: 1fr; }
+  .debt-summary-grid { grid-template-columns: 1fr; }
+}
+
+/* Grid 2 columns */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); }
+@media (max-width: 768px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+

@@ -18,14 +18,18 @@ let pool;
 
 async function initDB() {
   // First create the database if it doesn't exist
-  const tempConn = await mysql.createConnection({
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    password: dbConfig.password
-  });
-  await tempConn.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  await tempConn.end();
+  try {
+    const tempConn = await mysql.createConnection({
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.user,
+      password: dbConfig.password
+    });
+    await tempConn.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await tempConn.end();
+  } catch (error) {
+    console.log('Skipping CREATE DATABASE (Assuming cloud DB like Aiven where it is pre-created or restricted):', error.message);
+  }
 
   // Now create the pool connected to that database
   pool = mysql.createPool(dbConfig);
@@ -161,6 +165,38 @@ async function initDB() {
         action VARCHAR(255) NOT NULL,
         details TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Add cancelled_at column if not exists
+    try {
+      await conn.execute(`ALTER TABLE documents ADD COLUMN cancelled_at DATETIME DEFAULT NULL`);
+    } catch (e) {
+      if (!e.message.includes('Duplicate column')) console.log('cancelled_at column already exists');
+    }
+
+    // Add midtrans_token column if not exists
+    try {
+      await conn.execute(`ALTER TABLE documents ADD COLUMN midtrans_token VARCHAR(512) DEFAULT NULL`);
+    } catch (e) {
+      if (!e.message.includes('Duplicate column')) console.log('midtrans_token column already exists');
+    }
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS payment_reminders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        document_id INT NOT NULL,
+        reminder_date DATE NOT NULL,
+        reminder_type ENUM('before_due', 'on_due', 'after_due', 'custom') NOT NULL DEFAULT 'before_due',
+        days_offset INT DEFAULT 0,
+        message TEXT DEFAULT NULL,
+        is_sent TINYINT(1) DEFAULT 0,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sent_at DATETIME DEFAULT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
       )

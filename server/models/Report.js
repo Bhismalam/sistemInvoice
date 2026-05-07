@@ -5,24 +5,32 @@ const Report = {
     const pool = getPool();
     const [statsRows] = await pool.execute(`
       SELECT
-        COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) as total_revenue,
-        COALESCE(SUM(CASE WHEN status IN ('sent', 'overdue') THEN total ELSE 0 END), 0) as outstanding,
-        COALESCE(SUM(CASE WHEN status = 'overdue' THEN total ELSE 0 END), 0) as overdue,
-        COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) as paid,
+        COALESCE(SUM(CASE WHEN status = 'paid' AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as total_revenue,
+        COALESCE(SUM(CASE WHEN status = 'paid' AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as total_expense,
+        COALESCE(SUM(CASE WHEN status IN ('sent', 'overdue') AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as outstanding_sales,
+        COALESCE(SUM(CASE WHEN status IN ('sent', 'overdue') AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as outstanding_purchase,
+        COALESCE(SUM(CASE WHEN status = 'overdue' AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as overdue_sales,
+        COALESCE(SUM(CASE WHEN status = 'overdue' AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as overdue_purchase,
+        COUNT(CASE WHEN transaction_type = 'sales' THEN 1 END) as total_invoices_sales,
+        COUNT(CASE WHEN transaction_type = 'purchase' THEN 1 END) as total_invoices_purchase,
         COUNT(*) as total_invoices
       FROM documents 
-      WHERE user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice'
+      WHERE user_id = ? AND document_type = 'invoice' AND transaction_type IN ('sales', 'purchase')
     `, [userId]);
     const stats = statsRows[0];
 
-    const [expRows] = await pool.execute(`
-      SELECT COALESCE(SUM(total), 0) as total 
-      FROM documents 
-      WHERE user_id = ? AND transaction_type = 'purchase' AND document_type = 'invoice' AND status = 'paid'
-    `, [userId]);
+    // Convert string decimals from MySQL to numbers
+    stats.total_revenue = parseFloat(stats.total_revenue) || 0;
+    stats.total_expense = parseFloat(stats.total_expense) || 0;
+    stats.outstanding_sales = parseFloat(stats.outstanding_sales) || 0;
+    stats.outstanding_purchase = parseFloat(stats.outstanding_purchase) || 0;
+    stats.overdue_sales = parseFloat(stats.overdue_sales) || 0;
+    stats.overdue_purchase = parseFloat(stats.overdue_purchase) || 0;
 
-    stats.total_expenses = expRows[0].total;
-    stats.net_profit = stats.total_revenue - expRows[0].total;
+    stats.net_profit = stats.total_revenue - stats.total_expense;
+    stats.outstanding = stats.outstanding_sales + stats.outstanding_purchase;
+    stats.overdue = stats.overdue_sales + stats.overdue_purchase;
+
     return stats;
   },
 

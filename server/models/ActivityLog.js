@@ -21,7 +21,7 @@ const ActivityLog = {
       LEFT JOIN documents d ON al.document_id = d.id
       LEFT JOIN contacts c ON d.contact_id = c.id
       WHERE al.user_id = ?
-      ORDER BY al.created_at DESC
+      ORDER BY al.created_at DESC, al.id DESC
       LIMIT ?
     `, [userId, limit]);
     return rows;

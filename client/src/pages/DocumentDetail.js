@@ -1,22 +1,83 @@
 import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, formatDate, getStatusLabel } from '../utils/format.js';
+import { showToast } from '../router.js';
 
 export function renderDocumentDetail(container, routeParams = {}) {
   const transactionType = routeParams.transactionType || 'sales';
-  const documentType = routeParams.documentType || 'invoice';
+  const documentType = routeParams.documentType || 'order';
+
+  // Determine from URL hash if params not set
+  const hash = window.location.hash;
+  const actualTransactionType = hash.includes('/sales/') ? 'sales' : hash.includes('/purchases/') ? 'purchase' : transactionType;
+  const actualDocumentType = hash.includes('/invoices/') ? 'invoice' : hash.includes('/orders/') ? 'order' : documentType;
 
   let typeTitle = 'Dokumen';
-  if (transactionType === 'sales') typeTitle = documentType === 'order' ? 'Order Penjualan' : 'Invoice Penjualan';
-  if (transactionType === 'purchase') typeTitle = documentType === 'order' ? 'Order Pembelian' : 'Invoice Pembelian';
+  if (actualTransactionType === 'sales') typeTitle = actualDocumentType === 'order' ? 'Order Penjualan' : 'Invoice Penjualan';
+  if (actualTransactionType === 'purchase') typeTitle = actualDocumentType === 'order' ? 'Order Pembelian' : 'Invoice Pembelian';
 
-  const basePath = `#/${transactionType === 'sales' ? 'sales' : 'purchases'}/${documentType}s`;
+  const basePath = `#/${actualTransactionType === 'sales' ? 'sales' : 'purchases'}/${actualDocumentType}s`;
 
-  const page = renderLayout(container, `${transactionType}-${documentType}`);
+  const page = renderLayout(container, `${actualTransactionType}-${actualDocumentType}`);
   page.innerHTML = `<div class="page-loading"><div class="spinner spinner-lg"></div></div>`;
 
   api(`/documents/${routeParams.id}`).then(res => {
     const doc = res.data;
+    const isInvoice = doc.document_type === 'invoice';
+    const isSales = doc.transaction_type === 'sales';
+    const isPurchase = doc.transaction_type === 'purchase';
+
+    // Calculate days until due
+    const dueDate = new Date(doc.due_date);
+    const now = new Date();
+    const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+    const isOverdue = daysUntilDue < 0 && doc.status !== 'paid' && doc.status !== 'cancelled';
+
+    // Build due date warning
+    let dueDateWarning = '';
+    if (isInvoice && doc.status !== 'paid' && doc.status !== 'cancelled') {
+      if (isOverdue) {
+        dueDateWarning = `<div class="due-warning due-warning--overdue">
+          <span class="due-warning__icon">⚠️</span>
+          <div>
+            <strong>Jatuh tempo ${Math.abs(daysUntilDue)} hari yang lalu!</strong>
+            <p>Segera lakukan pembayaran untuk menghindari denda keterlambatan.</p>
+          </div>
+        </div>`;
+      } else if (daysUntilDue <= 3) {
+        dueDateWarning = `<div class="due-warning due-warning--urgent">
+          <span class="due-warning__icon">🔔</span>
+          <div>
+            <strong>Jatuh tempo dalam ${daysUntilDue} hari!</strong>
+            <p>Pastikan pembayaran dilakukan sebelum tanggal ${formatDate(doc.due_date)}.</p>
+          </div>
+        </div>`;
+      } else if (daysUntilDue <= 7) {
+        dueDateWarning = `<div class="due-warning due-warning--soon">
+          <span class="due-warning__icon">📅</span>
+          <div>
+            <strong>Jatuh tempo dalam ${daysUntilDue} hari</strong>
+            <p>Pengingat: Pembayaran jatuh tempo ${formatDate(doc.due_date)}.</p>
+          </div>
+        </div>`;
+      }
+    }
+
+    // Cancelled auto-delete timer
+    let cancelledTimer = '';
+    if (doc.status === 'cancelled' && doc.cancelled_at) {
+      const cancelTime = new Date(doc.cancelled_at);
+      const deleteTime = new Date(cancelTime.getTime() + 24 * 60 * 60 * 1000);
+      const hoursLeft = Math.max(0, Math.ceil((deleteTime - now) / (1000 * 60 * 60)));
+      cancelledTimer = `<div class="due-warning due-warning--cancelled">
+        <span class="due-warning__icon">🗑️</span>
+        <div>
+          <strong>Dokumen dibatalkan</strong>
+          <p>Invoice ini akan dihapus otomatis dalam ${hoursLeft} jam.</p>
+        </div>
+      </div>`;
+    }
+
     page.innerHTML = `<div class="animate-slide-up">
       <div class="page-header">
         <div class="flex items-center gap-lg">
@@ -25,6 +86,10 @@ export function renderDocumentDetail(container, routeParams = {}) {
         </div>
         <span class="badge badge-${doc.status}" style="font-size:0.9rem;padding:6px 16px">${getStatusLabel(doc.status)}</span>
       </div>
+
+      ${dueDateWarning}
+      ${cancelledTimer}
+
       <div class="grid-sidebar">
         <div class="glass-card" style="padding:var(--space-2xl)">
           <div style="background:var(--bg-primary);border-radius:var(--radius-md);padding:var(--space-2xl)">
@@ -50,33 +115,168 @@ export function renderDocumentDetail(container, routeParams = {}) {
           </div>
         </div>
         <div>
+          <!-- PAYMENT ACTIONS -->
           <div class="glass-card" style="padding:var(--space-xl);margin-bottom:var(--space-xl)">
-            <h3 style="font-weight:600;margin-bottom:var(--space-base)">Aksi</h3>
-            <div class="flex flex-col gap-sm">
-              ${documentType === 'order' ? `
-                <a href="#/${transactionType === 'sales' ? 'sales' : 'purchases'}/invoices/new?source_order=${doc.id}" class="btn btn-primary w-full">📄 Buat Invoice dari Order</a>
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)">⚡ Aksi Pembayaran</h3>
+            <div class="flex flex-col gap-sm" id="payment-actions">
+              ${doc.document_type === 'order' ? `
+                <a href="#/${actualTransactionType === 'sales' ? 'sales' : 'purchases'}/invoices/new?source_order=${doc.id}" class="btn btn-primary w-full">📄 Buat Invoice dari Order</a>
               ` : ''}
-              ${doc.status === 'draft' ? `<button class="btn btn-secondary w-full" onclick="(async()=>{await fetch('/api/documents/${doc.id}/status',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('accessToken')},body:JSON.stringify({status:'sent'})});location.reload()})()">📤 Kirim ${documentType === 'order' ? 'Order' : 'Invoice'}</button>` : ''}
-              ${doc.status === 'sent' && documentType === 'invoice' ? `
-                <button class="btn btn-primary w-full" id="pay-midtrans-btn" data-id="${doc.id}">💳 Bayar Online (Midtrans)</button>
-                <button class="btn btn-secondary w-full" onclick="(async()=>{await fetch('/api/documents/${doc.id}/status',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('accessToken')},body:JSON.stringify({status:'paid'})});location.reload()})()">💰 Tandai Lunas Manual</button>
+              ${doc.status === 'draft' ? `
+                <button class="btn btn-secondary w-full" id="btn-send">📤 Kirim ${actualDocumentType === 'order' ? 'Order' : 'Invoice'}</button>
+              ` : ''}
+              ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice && isSales ? `
+                <div class="payment-method-box">
+                  <p class="form-label" style="margin-bottom:var(--space-sm)">Metode Pembayaran</p>
+                  <select class="form-select" id="pay-method" style="margin-bottom:var(--space-sm)">
+                    <option value="transfer">Transfer Bank</option>
+                    <option value="cash">Tunai</option>
+                    <option value="qris">QRIS</option>
+                    <option value="e-wallet">E-Wallet</option>
+                    <option value="kartu_kredit">Kartu Kredit</option>
+                  </select>
+                  <button class="btn btn-success w-full" id="btn-pay">
+                    <span>💰</span> Tandai Sudah Dibayar
+                  </button>
+                </div>
+                <button class="btn btn-primary w-full" id="pay-midtrans-btn" data-id="${doc.id}" style="padding:14px 20px;font-size:1rem">💳 Bayar Online (Midtrans)</button>
+                <p class="text-muted" style="font-size:0.8rem;text-align:center;margin-top:var(--space-sm)">Kirim link pembayaran online ke pelanggan.</p>
+                <button class="btn btn-danger-outline w-full" id="btn-cancel">❌ Batalkan Pembayaran</button>
+              ` : ''}
+              ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice && isPurchase ? `
+                <div class="payment-method-box">
+                  <p class="form-label" style="margin-bottom:var(--space-sm)">Metode Pembayaran</p>
+                  <select class="form-select" id="pay-method" style="margin-bottom:var(--space-sm)">
+                    <option value="transfer">Transfer Bank</option>
+                    <option value="cash">Tunai</option>
+                    <option value="qris">QRIS</option>
+                    <option value="e-wallet">E-Wallet</option>
+                    <option value="kartu_kredit">Kartu Kredit</option>
+                  </select>
+                  <button class="btn btn-success w-full" id="btn-pay">
+                    <span>💰</span> Bayar Invoice
+                  </button>
+                </div>
+                <button class="btn btn-danger-outline w-full" id="btn-cancel">❌ Batalkan Pembayaran</button>
+              ` : ''}
+              ${doc.status === 'paid' ? `
+                <div class="payment-status-box payment-status-box--paid">
+                  <span class="payment-status-icon">✅</span>
+                  <div>
+                    <strong>Sudah Dibayar</strong>
+                    <p>${doc.paid_at ? `Dibayar pada ${formatDate(doc.paid_at)}` : 'Pembayaran sudah dikonfirmasi'}</p>
+                    <p class="text-muted" style="font-size:0.8rem;margin-top:4px">Masuk ke ${isSales ? 'Kuitansi Penjualan' : 'Kuitansi Pembelian'}</p>
+                  </div>
+                </div>
+              ` : ''}
+              ${doc.status === 'cancelled' ? `
+                <div class="payment-status-box payment-status-box--cancelled">
+                  <span class="payment-status-icon">❌</span>
+                  <div>
+                    <strong>Dibatalkan</strong>
+                    <p>Invoice ini telah dibatalkan dan akan dihapus otomatis dalam 24 jam.</p>
+                  </div>
+                </div>
               ` : ''}
               <a href="${basePath}" class="btn btn-ghost w-full">← Kembali ke Daftar</a>
             </div>
           </div>
-          <div class="glass-card" style="padding:var(--space-xl)">
-            <h3 style="font-weight:600;margin-bottom:var(--space-base)">Info</h3>
+
+          <!-- INFO & TRACKING -->
+          <div class="glass-card" style="padding:var(--space-xl);margin-bottom:var(--space-xl)">
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)">📋 Info Dokumen</h3>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);font-size:0.85rem">
               <div class="flex justify-between"><span class="text-muted">Status</span><span class="badge badge-${doc.status}">${getStatusLabel(doc.status)}</span></div>
+              <div class="flex justify-between"><span class="text-muted">Tipe</span><span>${typeTitle}</span></div>
               <div class="flex justify-between"><span class="text-muted">Dibuat</span><span>${formatDate(doc.created_at)}</span></div>
-              <div class="flex justify-between"><span class="text-muted">Jatuh Tempo</span><span>${formatDate(doc.due_date)}</span></div>
+              <div class="flex justify-between"><span class="text-muted">Jatuh Tempo</span><span class="${isOverdue ? 'text-danger' : ''}">${formatDate(doc.due_date)} ${isOverdue ? '(Lewat!)' : ''}</span></div>
               ${doc.paid_at ? `<div class="flex justify-between"><span class="text-muted">Dibayar</span><span class="text-success">${formatDate(doc.paid_at)}</span></div>` : ''}
+              ${doc.cancelled_at ? `<div class="flex justify-between"><span class="text-muted">Dibatalkan</span><span class="text-danger">${formatDate(doc.cancelled_at)}</span></div>` : ''}
+              ${isInvoice && doc.status !== 'paid' && doc.status !== 'cancelled' ? `
+                <div class="flex justify-between"><span class="text-muted">Sisa Hari</span><span class="${daysUntilDue <= 3 ? 'text-danger' : daysUntilDue <= 7 ? 'text-warning' : 'text-success'}">${daysUntilDue} hari</span></div>
+              ` : ''}
             </div>
           </div>
+
+          ${isInvoice ? `
+          <!-- PAYMENT TRACKER -->
+          <div class="glass-card" style="padding:var(--space-xl)">
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)">🔔 Pengingat Pembayaran</h3>
+            <div id="payment-reminders" style="font-size:0.85rem">
+              <div class="spinner" style="margin:var(--space-base) auto"></div>
+            </div>
+          </div>
+          ` : ''}
         </div>
       </div>
     </div>`;
 
+    // Load payment reminders if invoice
+    if (isInvoice) {
+      loadReminders(doc.id);
+    }
+
+    // Send button
+    document.getElementById('btn-send')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-send');
+      btn.innerHTML = '<span class="spinner"></span> Mengirim...';
+      btn.disabled = true;
+      try {
+        await api(`/documents/${doc.id}/status`, { method: 'PATCH', body: { status: 'sent' } });
+        showToast('Dokumen berhasil dikirim! 📤', 'success');
+        window.location.reload();
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.innerHTML = '📤 Kirim';
+        btn.disabled = false;
+      }
+    });
+
+    // Pay button
+    document.getElementById('btn-pay')?.addEventListener('click', async () => {
+      const method = document.getElementById('pay-method')?.value || 'transfer';
+
+      // If midtrans selected, trigger Midtrans flow instead
+      if (method === 'midtrans') {
+        document.getElementById('pay-midtrans-btn')?.click();
+        return;
+      }
+
+      const btn = document.getElementById('btn-pay');
+      btn.innerHTML = '<span class="spinner"></span> Memproses...';
+      btn.disabled = true;
+      try {
+        const result = await api(`/documents/${doc.id}/pay`, {
+          method: 'POST',
+          body: { payment_method: method }
+        });
+        showToast(result.message || 'Pembayaran berhasil! ✅', 'success');
+        window.location.reload();
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.innerHTML = `<span>💰</span> ${isSales ? 'Tandai Sudah Dibayar' : 'Bayar Invoice'}`;
+        btn.disabled = false;
+      }
+    });
+
+    // Cancel button
+    document.getElementById('btn-cancel')?.addEventListener('click', async () => {
+      if (!confirm('Yakin ingin membatalkan pembayaran ini? Invoice akan dihapus otomatis dalam 24 jam.')) return;
+      const btn = document.getElementById('btn-cancel');
+      btn.innerHTML = '<span class="spinner"></span> Membatalkan...';
+      btn.disabled = true;
+      try {
+        const result = await api(`/documents/${doc.id}/cancel`, { method: 'POST' });
+        showToast(result.message || 'Dokumen dibatalkan', 'warning');
+        window.location.reload();
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.innerHTML = '❌ Batalkan Pembayaran';
+        btn.disabled = false;
+      }
+    });
+
+    // Midtrans button
     document.getElementById('pay-midtrans-btn')?.addEventListener('click', async (e) => {
       const btn = e.target;
       const originalText = btn.innerHTML;
@@ -86,18 +286,75 @@ export function renderDocumentDetail(container, routeParams = {}) {
         const res = await api('/payments/charge', { method: 'POST', body: { document_id: doc.id } });
         if (res.data && res.data.token && window.snap) {
           window.snap.pay(res.data.token, {
-            onSuccess: function(result){ alert("Pembayaran Berhasil!"); location.reload(); },
-            onPending: function(result){ alert("Menunggu Pembayaran!"); location.reload(); },
-            onError: function(result){ alert("Pembayaran Gagal!"); btn.innerHTML = originalText; btn.disabled = false; },
-            onClose: function(){ btn.innerHTML = originalText; btn.disabled = false; }
+            onSuccess: async function (result) {
+              showToast('Pembayaran Berhasil! ✅ Menyinkronkan status...', 'success');
+              if (result.order_id) {
+                try { await api(`/payments/status/${result.order_id}`); } catch (e) { }
+              }
+              window.location.reload();
+            },
+            onPending: function (result) { showToast('Menunggu Pembayaran...', 'warning'); window.location.reload(); },
+            onError: function (result) { showToast('Pembayaran Gagal!', 'error'); btn.innerHTML = originalText; btn.disabled = false; },
+            onClose: function () { btn.innerHTML = originalText; btn.disabled = false; }
           });
         }
       } catch (err) {
-        alert("Gagal memproses pembayaran: " + err.message);
+        showToast('Gagal memproses: ' + err.message, 'error');
         btn.innerHTML = originalText;
         btn.disabled = false;
       }
     });
 
-  }).catch(err => { page.innerHTML = `<div class="empty-state"><p class="text-danger">Gagal memuat dokumen: ${err.message}</p><a href="${basePath}" class="btn btn-secondary">← Kembali</a></div>`; });
+  }).catch(err => {
+    page.innerHTML = `<div class="empty-state"><p class="text-danger">Gagal memuat dokumen: ${err.message}</p><a href="${basePath}" class="btn btn-secondary">← Kembali</a></div>`;
+  });
+
+  async function loadReminders(docId) {
+    try {
+      const trackerRes = await api(`/documents/${docId}/tracker`);
+      const tracker = trackerRes.data;
+      const remindersEl = document.getElementById('payment-reminders');
+      if (!remindersEl) return;
+
+      let html = '';
+
+      // Payment progress bar
+      if (tracker.document.status !== 'cancelled') {
+        html += `<div class="payment-progress">
+          <div class="payment-progress__bar">
+            <div class="payment-progress__fill" style="width:${tracker.percentPaid}%"></div>
+          </div>
+          <div class="flex justify-between" style="margin-top:4px">
+            <span class="text-muted">Dibayar: ${formatCurrency(tracker.totalPaid)}</span>
+            <span class="${tracker.remaining > 0 ? 'text-warning' : 'text-success'}">Sisa: ${formatCurrency(tracker.remaining)}</span>
+          </div>
+        </div>`;
+      }
+
+      // Reminders list
+      if (tracker.reminders && tracker.reminders.length > 0) {
+        html += `<div style="margin-top:var(--space-base)">`;
+        for (const r of tracker.reminders) {
+          const isSent = r.is_sent;
+          const reminderDate = new Date(r.reminder_date);
+          const isPast = reminderDate < new Date();
+          html += `<div class="reminder-item ${isSent ? 'reminder-item--sent' : ''} ${isPast && !isSent ? 'reminder-item--missed' : ''}">
+            <span class="reminder-item__icon">${isSent ? '✅' : isPast ? '⚠️' : '🔔'}</span>
+            <div class="reminder-item__content">
+              <p>${r.message || 'Pengingat pembayaran'}</p>
+              <span class="text-muted">${formatDate(r.reminder_date)}</span>
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      } else {
+        html += `<p class="text-muted" style="margin-top:var(--space-sm)">Belum ada pengingat.</p>`;
+      }
+
+      remindersEl.innerHTML = html;
+    } catch (err) {
+      const el = document.getElementById('payment-reminders');
+      if (el) el.innerHTML = `<p class="text-muted">-</p>`;
+    }
+  }
 }

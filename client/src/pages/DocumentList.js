@@ -12,6 +12,7 @@ export function renderDocumentList(container, routeParams = {}) {
   if (transactionType === 'purchase') title = documentType === 'order' ? 'Order Pembelian' : 'Invoice Pembelian';
 
   const basePath = `#/${transactionType === 'sales' ? 'sales' : 'purchases'}/${documentType}s`;
+  const isInvoice = documentType === 'invoice';
 
   const page = renderLayout(container, `${transactionType}-${documentType}`);
   page.innerHTML = `<div class="animate-slide-up">
@@ -24,9 +25,10 @@ export function renderDocumentList(container, routeParams = {}) {
         <div class="tabs" id="status-tabs">
           <button class="tab-btn active" data-status="all">Semua</button>
           <button class="tab-btn" data-status="draft">Draft</button>
-          <button class="tab-btn" data-status="sent">Terkirim</button>
-          <button class="tab-btn" data-status="paid">Lunas</button>
+          <button class="tab-btn" data-status="sent">${isInvoice ? 'Menunggu' : 'Terkirim'}</button>
+          <button class="tab-btn" data-status="paid">${isInvoice ? 'Lunas' : 'Lunas'}</button>
           <button class="tab-btn" data-status="overdue">Jatuh Tempo</button>
+          <button class="tab-btn" data-status="cancelled">Dibatalkan</button>
         </div>
         <input type="text" class="form-input" placeholder="🔍 Cari nomor atau kontak..." id="search-input" style="max-width:260px" />
       </div>
@@ -70,23 +72,36 @@ export function renderDocumentList(container, routeParams = {}) {
         <table class="data-table">
           <thead><tr><th>No. Dokumen</th><th>Kontak</th><th>Tanggal</th><th>Jatuh Tempo</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            ${docs.map(doc => `
-              <tr>
+            ${docs.map(doc => {
+              const dueDate = new Date(doc.due_date);
+              const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
+              const isDueSoon = daysLeft <= 3 && daysLeft >= 0 && doc.status !== 'paid' && doc.status !== 'cancelled';
+              const isOverdue = daysLeft < 0 && doc.status !== 'paid' && doc.status !== 'cancelled';
+              
+              return `
+              <tr class="${isOverdue ? 'row-overdue' : isDueSoon ? 'row-due-soon' : ''}">
                 <td><a href="${basePath}/${doc.id}" style="font-weight:600;color:var(--accent-primary)">${doc.document_number}</a></td>
                 <td>${doc.contact_name || '-'}</td>
                 <td>${formatDate(doc.issue_date)}</td>
-                <td>${formatDate(doc.due_date)}</td>
+                <td>
+                  ${formatDate(doc.due_date)}
+                  ${isDueSoon ? `<span class="due-badge due-badge--soon">⏰ ${daysLeft}h</span>` : ''}
+                  ${isOverdue ? `<span class="due-badge due-badge--overdue">⚠️ Lewat</span>` : ''}
+                </td>
                 <td style="font-weight:600">${formatCurrency(doc.total)}</td>
                 <td><span class="badge badge-${doc.status}">${getStatusLabel(doc.status)}</span></td>
                 <td>
-                  <div style="display:flex;gap:4px">
-                    ${doc.status === 'draft' ? `<button class="btn btn-ghost btn-sm send-btn" data-id="${doc.id}">📤 Kirim</button>` : ''}
-                    ${doc.status === 'sent' && documentType === 'invoice' ? `<button class="btn btn-ghost btn-sm pay-btn" data-id="${doc.id}">💰 Lunas</button>` : ''}
-                    <button class="btn btn-ghost btn-sm del-btn" data-id="${doc.id}">🗑️</button>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    ${doc.status === 'draft' ? `<button class="btn btn-ghost btn-sm send-btn" data-id="${doc.id}" title="Kirim">📤</button>` : ''}
+                    ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice ? `
+                      <button class="btn btn-ghost btn-sm pay-btn" data-id="${doc.id}" title="Bayar">💰</button>
+                      <button class="btn btn-ghost btn-sm cancel-btn" data-id="${doc.id}" title="Batalkan" style="color:var(--danger)">❌</button>
+                    ` : ''}
+                    ${doc.status !== 'paid' ? `<button class="btn btn-ghost btn-sm del-btn" data-id="${doc.id}" title="Hapus">🗑️</button>` : ''}
                   </div>
                 </td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>
         <div class="flex justify-between items-center" style="margin-top:var(--space-base);padding-top:var(--space-base);border-top:1px solid rgba(255,255,255,0.05)">
@@ -101,7 +116,8 @@ export function renderDocumentList(container, routeParams = {}) {
 
       // Event handlers
       document.querySelectorAll('.send-btn').forEach(b => b.addEventListener('click', () => updateStatus(b.dataset.id, 'sent')));
-      document.querySelectorAll('.pay-btn').forEach(b => b.addEventListener('click', () => updateStatus(b.dataset.id, 'paid')));
+      document.querySelectorAll('.pay-btn').forEach(b => b.addEventListener('click', () => processPayment(b.dataset.id)));
+      document.querySelectorAll('.cancel-btn').forEach(b => b.addEventListener('click', () => cancelDocument(b.dataset.id)));
       document.querySelectorAll('.del-btn').forEach(b => b.addEventListener('click', () => deleteDocument(b.dataset.id)));
       document.getElementById('prev-page')?.addEventListener('click', () => { currentPage--; loadDocuments(); });
       document.getElementById('next-page')?.addEventListener('click', () => { currentPage++; loadDocuments(); });
@@ -109,8 +125,31 @@ export function renderDocumentList(container, routeParams = {}) {
   }
 
   async function updateStatus(id, status) {
-    try { await api(`/documents/${id}/status`, { method: 'PATCH', body: { status } }); showToast(`Dokumen berhasil di${status === 'paid' ? 'bayar' : 'kirim'}!`, 'success'); loadDocuments(); } catch (err) { showToast(err.message, 'error'); }
+    try { 
+      await api(`/documents/${id}/status`, { method: 'PATCH', body: { status } }); 
+      showToast(`Dokumen berhasil dikirim! 📤`, 'success'); 
+      loadDocuments(); 
+    } catch (err) { showToast(err.message, 'error'); }
   }
+
+  async function processPayment(id) {
+    if (!confirm('Konfirmasi pembayaran untuk dokumen ini?')) return;
+    try { 
+      const result = await api(`/documents/${id}/pay`, { method: 'POST', body: { payment_method: 'transfer' } }); 
+      showToast(result.message || 'Pembayaran berhasil! ✅', 'success'); 
+      loadDocuments(); 
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  async function cancelDocument(id) {
+    if (!confirm('Yakin ingin membatalkan? Invoice akan dihapus otomatis dalam 24 jam.')) return;
+    try { 
+      const result = await api(`/documents/${id}/cancel`, { method: 'POST' }); 
+      showToast(result.message || 'Dokumen dibatalkan', 'warning'); 
+      loadDocuments(); 
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
   async function deleteDocument(id) {
     if (!confirm('Hapus dokumen ini?')) return;
     try { await api(`/documents/${id}`, { method: 'DELETE' }); showToast('Dokumen dihapus', 'success'); loadDocuments(); } catch (err) { showToast(err.message, 'error'); }

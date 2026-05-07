@@ -1,0 +1,41 @@
+Berikut adalah penjabaran lengkap mengenai teknologi (stack) yang digunakan dalam proyek **InvoiceFlow** ini:
+
+### 1. Frontend (Tampilan Pengguna)
+Frontend dibangun dengan pendekatan yang ringan dan cepat menggunakan teknologi modern tanpa framework berat (seperti React/Vue), namun tetap memiliki struktur aplikasi satu halaman (Single Page Application).
+
+*   **Bahasa Utama**: **Vanilla JavaScript (ES6+)**. Seluruh logika tampilan, manipulasi DOM, dan interaksi data ditulis menggunakan JavaScript murni.
+*   **Build Tool**: **Vite**. Digunakan sebagai development server dan bundler untuk memastikan aplikasi berjalan sangat cepat saat pengembangan maupun saat di-deploy.
+*   **Styling**: **Vanilla CSS**. Desain menggunakan CSS murni yang dipisahkan secara modular (misal: `layout.css`, `auth.css`, `index.css`). Ini memberikan kontrol penuh atas tampilan aplikasi yang terlihat premium dan modern.
+*   **Routing**: **Custom SPA Router**. Aplikasi ini menggunakan sistem routing buatan sendiri di `router.js` untuk berpindah antar halaman tanpa melakukan refresh (reload) browser.
+*   **Arsitektur**: **Modular Components**. Meskipun menggunakan JS murni, aplikasi ini tetap terstruktur dengan membagi halaman ke dalam fungsi-fungsi render di folder `pages/`.
+
+### 2. Backend (Server & API)
+Backend berfungsi sebagai otak aplikasi yang menangani logika bisnis, keamanan, dan pengolahan data.
+
+*   **Runtime**: **Node.js**. Lingkungan eksekusi JavaScript di sisi server.
+*   **Framework**: **Express.js**. Framework minimalis yang digunakan untuk membangun RESTful API yang melayani permintaan dari frontend.
+*   **Autentikasi & Keamanan**:
+    *   **JWT (JSON Web Token)**: Untuk menangani sistem login yang aman.
+    *   **Bcrypt**: Untuk mengenkripsi (hashing) password pengguna di database.
+    *   **Google Auth Library**: Untuk mendukung fitur Login via Google.
+    *   **Helmet & CORS**: Untuk proteksi keamanan header HTTP dan akses lintas domain.
+*   **Fitur Utama**:
+    *   **Midtrans Client**: Integrasi dengan Payment Gateway Midtrans untuk pembayaran digital (QRIS, VA, dll).
+    *   **PDFKit**: Digunakan untuk mengonversi data invoice menjadi file PDF secara otomatis.
+    *   **Multer**: Menangani unggahan file, seperti logo bisnis pengguna.
+
+### 3. Database (Penyimpanan Data)
+Data disimpan secara terstruktur menggunakan database relasional yang stabil.
+
+*   **Sistem Database**: **MySQL**. Database SQL yang sangat populer untuk aplikasi finansial karena integritas datanya (ACID compliant).
+*   **Driver**: **mysql2**. Digunakan oleh Node.js untuk berkomunikasi dengan server MySQL menggunakan fitur *Promise* agar performanya lebih efisien.
+*   **Skema Data**: Terdiri dari beberapa tabel utama yang saling berelasi:
+    *   `users`: Menyimpan data profil dan pengaturan bisnis.
+    *   `contacts`: Data pelanggan dan pemasok (supplier).
+    *   `products`: Katalog barang atau jasa.
+    *   `documents`: Data utama transaksi (Sales Order, Invoices, Purchase Orders).
+    *   `document_items`: Detail barang yang dibeli/dijual dalam satu invoice.
+    *   `receipts`: Catatan pembayaran yang telah diterima/dilakukan.
+    *   `activity_logs`: Mencatat setiap aktivitas penting dalam sistem untuk audit.
+
+Secara keseluruhan, proyek ini menggunakan **MEVN Stack (tanpa Vue)** atau lebih tepatnya **Vanilla-Node-MySQL stack**, yang sangat efisien dan mudah untuk dikembangkan lebih lanjut.

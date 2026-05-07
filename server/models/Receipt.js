@@ -69,7 +69,7 @@ const Receipt = {
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const countQuery = query.replace(/SELECT r\.\*, d\.document_number.*?c\.name as contact_name/, 'SELECT COUNT(*) as total');
+    const countQuery = query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
     const [countRows] = await pool.execute(countQuery, params);
     const total = countRows[0].total;
 
