@@ -63,7 +63,7 @@ const settingsController = {
 
   async update(req, res, next) {
     try {
-      const user = await User.update(req.user.id, req.body);
+      const user = await User.findByIdAndUpdate(req.user.id, req.body, { new: true });
       res.json({ success: true, message: 'Pengaturan berhasil disimpan!', data: user });
     } catch (error) { next(error); }
   }

@@ -1,5 +1,5 @@
 // API Client — centralized fetch wrapper with JWT auth
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 let accessToken = localStorage.getItem('accessToken') || '';
 let refreshToken = localStorage.getItem('refreshToken') || '';

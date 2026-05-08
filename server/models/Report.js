@@ -1,31 +1,49 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
+require('./Document'); // Ensure schema is registered
 
 const Report = {
   async getDashboardStats(userId) {
-    const pool = getPool();
-    const [statsRows] = await pool.execute(`
-      SELECT
-        COALESCE(SUM(CASE WHEN status = 'paid' AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as total_revenue,
-        COALESCE(SUM(CASE WHEN status = 'paid' AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as total_expense,
-        COALESCE(SUM(CASE WHEN status IN ('sent', 'overdue') AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as outstanding_sales,
-        COALESCE(SUM(CASE WHEN status IN ('sent', 'overdue') AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as outstanding_purchase,
-        COALESCE(SUM(CASE WHEN status = 'overdue' AND transaction_type = 'sales' THEN total ELSE 0 END), 0) as overdue_sales,
-        COALESCE(SUM(CASE WHEN status = 'overdue' AND transaction_type = 'purchase' THEN total ELSE 0 END), 0) as overdue_purchase,
-        COUNT(CASE WHEN transaction_type = 'sales' THEN 1 END) as total_invoices_sales,
-        COUNT(CASE WHEN transaction_type = 'purchase' THEN 1 END) as total_invoices_purchase,
-        COUNT(*) as total_invoices
-      FROM documents 
-      WHERE user_id = ? AND document_type = 'invoice' AND transaction_type IN ('sales', 'purchase')
-    `, [userId]);
-    const stats = statsRows[0];
+    const Document = mongoose.model('Document');
+    
+    const docs = await Document.find({
+      user_id: userId,
+      document_type: 'invoice',
+      transaction_type: { $in: ['sales', 'purchase'] }
+    });
 
-    // Convert string decimals from MySQL to numbers
-    stats.total_revenue = parseFloat(stats.total_revenue) || 0;
-    stats.total_expense = parseFloat(stats.total_expense) || 0;
-    stats.outstanding_sales = parseFloat(stats.outstanding_sales) || 0;
-    stats.outstanding_purchase = parseFloat(stats.outstanding_purchase) || 0;
-    stats.overdue_sales = parseFloat(stats.overdue_sales) || 0;
-    stats.overdue_purchase = parseFloat(stats.overdue_purchase) || 0;
+    const stats = {
+      total_revenue: 0,
+      total_expense: 0,
+      outstanding_sales: 0,
+      outstanding_purchase: 0,
+      overdue_sales: 0,
+      overdue_purchase: 0,
+      total_invoices_sales: 0,
+      total_invoices_purchase: 0,
+      total_invoices: docs.length
+    };
+
+    docs.forEach(d => {
+      const isSales = d.transaction_type === 'sales';
+      const isPurchase = d.transaction_type === 'purchase';
+      const val = d.total || 0;
+
+      if (isSales) stats.total_invoices_sales++;
+      if (isPurchase) stats.total_invoices_purchase++;
+
+      if (d.status === 'paid') {
+        if (isSales) stats.total_revenue += val;
+        if (isPurchase) stats.total_expense += val;
+      } else if (d.status === 'sent' || d.status === 'overdue') {
+        if (isSales) stats.outstanding_sales += val;
+        if (isPurchase) stats.outstanding_purchase += val;
+
+        if (d.status === 'overdue') {
+          if (isSales) stats.overdue_sales += val;
+          if (isPurchase) stats.overdue_purchase += val;
+        }
+      }
+    });
 
     stats.net_profit = stats.total_revenue - stats.total_expense;
     stats.outstanding = stats.outstanding_sales + stats.outstanding_purchase;
@@ -35,91 +53,144 @@ const Report = {
   },
 
   async getRevenueChart(userId, months = 6) {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT 
-        DATE_FORMAT(paid_at, '%Y-%m') as month,
-        COALESCE(SUM(total), 0) as revenue
-      FROM documents
-      WHERE user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice' AND status = 'paid' AND paid_at IS NOT NULL
-        AND paid_at >= DATE_SUB(NOW(), INTERVAL ? MONTH)
-      GROUP BY DATE_FORMAT(paid_at, '%Y-%m')
-      ORDER BY month ASC
-    `, [userId, months]);
-    return rows;
+    const Document = mongoose.model('Document');
+    const pastDate = new Date();
+    pastDate.setMonth(pastDate.getMonth() - months);
+    
+    const docs = await Document.find({
+      user_id: userId,
+      transaction_type: 'sales',
+      document_type: 'invoice',
+      status: 'paid',
+      paid_at: { $gte: pastDate }
+    });
+
+    const grouped = {};
+    docs.forEach(d => {
+      if (!d.paid_at) return;
+      const month = d.paid_at.toISOString().slice(0, 7); // YYYY-MM
+      if (!grouped[month]) grouped[month] = 0;
+      grouped[month] += d.total;
+    });
+
+    return Object.keys(grouped).sort().map(month => ({
+      month,
+      revenue: grouped[month]
+    }));
   },
 
   async getAgingReport(userId) {
-    const pool = getPool();
+    const Document = mongoose.model('Document');
+    const docs = await Document.find({
+      user_id: userId,
+      transaction_type: 'sales',
+      document_type: 'invoice',
+      status: { $in: ['sent', 'overdue'] }
+    });
+
     const ranges = [
-      { label: '0-30 hari', min: 0, max: 30 },
-      { label: '31-60 hari', min: 31, max: 60 },
-      { label: '61-90 hari', min: 61, max: 90 },
-      { label: '90+ hari', min: 91, max: 9999 }
+      { label: '0-30 hari', min: 0, max: 30, count: 0, amount: 0 },
+      { label: '31-60 hari', min: 31, max: 60, count: 0, amount: 0 },
+      { label: '61-90 hari', min: 61, max: 90, count: 0, amount: 0 },
+      { label: '90+ hari', min: 91, max: 9999, count: 0, amount: 0 }
     ];
 
-    const results = [];
-    for (const range of ranges) {
-      const [rows] = await pool.execute(`
-        SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as amount
-        FROM documents
-        WHERE user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice' AND status IN ('sent', 'overdue')
-          AND DATEDIFF(NOW(), due_date) BETWEEN ? AND ?
-      `, [userId, range.min, range.max]);
-      results.push({ label: range.label, ...rows[0] });
-    }
-    return results;
+    const now = new Date();
+    docs.forEach(d => {
+      const due = new Date(d.due_date);
+      const diffTime = Math.abs(now - due);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      for (let r of ranges) {
+        if (diffDays >= r.min && diffDays <= r.max) {
+          r.count++;
+          r.amount += d.total;
+          break;
+        }
+      }
+    });
+
+    return ranges;
   },
 
   async getProfitLoss(userId, startDate, endDate) {
-    const pool = getPool();
-    const [incomeRows] = await pool.execute(`
-      SELECT COALESCE(SUM(total), 0) as total
-      FROM documents
-      WHERE user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice' AND status = 'paid' AND paid_at BETWEEN ? AND ?
-    `, [userId, startDate, endDate]);
+    const Document = mongoose.model('Document');
+    
+    const docs = await Document.find({
+      user_id: userId,
+      document_type: 'invoice',
+      status: 'paid',
+      paid_at: { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59Z') }
+    });
 
-    const [expenseRows] = await pool.execute(`
-      SELECT COALESCE(SUM(total), 0) as total
-      FROM documents
-      WHERE user_id = ? AND transaction_type = 'purchase' AND document_type = 'invoice' AND status = 'paid' AND paid_at BETWEEN ? AND ?
-    `, [userId, startDate, endDate]);
+    let income = 0;
+    let expenses = 0;
+
+    docs.forEach(d => {
+      if (d.transaction_type === 'sales') income += d.total;
+      if (d.transaction_type === 'purchase') expenses += d.total;
+    });
 
     return {
-      income: incomeRows[0].total,
-      expenses: expenseRows[0].total,
-      profit: incomeRows[0].total - expenseRows[0].total
+      income,
+      expenses,
+      profit: income - expenses
     };
   },
 
   async getCashflow(userId, months = 6) {
-    const pool = getPool();
-    const [cashIn] = await pool.execute(`
-      SELECT DATE_FORMAT(paid_at, '%Y-%m') as month, COALESCE(SUM(total), 0) as amount
-      FROM documents 
-      WHERE user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice' AND status = 'paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL ? MONTH)
-      GROUP BY month ORDER BY month
-    `, [userId, months]);
+    const Document = mongoose.model('Document');
+    const pastDate = new Date();
+    pastDate.setMonth(pastDate.getMonth() - months);
+    
+    const docs = await Document.find({
+      user_id: userId,
+      document_type: 'invoice',
+      status: 'paid',
+      paid_at: { $gte: pastDate }
+    });
 
-    const [cashOut] = await pool.execute(`
-      SELECT DATE_FORMAT(paid_at, '%Y-%m') as month, COALESCE(SUM(total), 0) as amount
-      FROM documents 
-      WHERE user_id = ? AND transaction_type = 'purchase' AND document_type = 'invoice' AND status = 'paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL ? MONTH)
-      GROUP BY month ORDER BY month
-    `, [userId, months]);
+    const cashIn = {};
+    const cashOut = {};
 
-    return { cashIn, cashOut };
+    docs.forEach(d => {
+      if (!d.paid_at) return;
+      const month = d.paid_at.toISOString().slice(0, 7);
+      
+      if (d.transaction_type === 'sales') {
+        if (!cashIn[month]) cashIn[month] = 0;
+        cashIn[month] += d.total;
+      } else if (d.transaction_type === 'purchase') {
+        if (!cashOut[month]) cashOut[month] = 0;
+        cashOut[month] += d.total;
+      }
+    });
+
+    const formatArray = (obj) => Object.keys(obj).sort().map(month => ({ month, amount: obj[month] }));
+
+    return {
+      cashIn: formatArray(cashIn),
+      cashOut: formatArray(cashOut)
+    };
   },
 
   async getRecentInvoices(userId, limit = 5) {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT d.*, c.name as contact_name
-      FROM documents d LEFT JOIN contacts c ON d.contact_id = c.id
-      WHERE d.user_id = ? AND d.transaction_type = 'sales' AND d.document_type = 'invoice'
-      ORDER BY d.created_at DESC LIMIT ?
-    `, [userId, limit]);
-    return rows;
+    const Document = mongoose.model('Document');
+    const docs = await Document.find({
+      user_id: userId,
+      transaction_type: 'sales',
+      document_type: 'invoice'
+    }).populate('contact_id').sort({ created_at: -1 }).limit(limit);
+
+    return docs.map(doc => {
+      const d = doc.toObject();
+      return {
+        ...d,
+        contact_name: d.contact_id ? d.contact_id.name : null,
+        contact_id: d.contact_id ? d.contact_id._id.toString() : null,
+        id: d._id.toString()
+      };
+    });
   }
 };
 

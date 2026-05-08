@@ -1,196 +1,239 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
+
+const paymentReminderSchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  document_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Document', required: true },
+  reminder_date: { type: Date, required: true },
+  reminder_type: { type: String, enum: ['before_due', 'on_due', 'after_due', 'custom'], default: 'before_due' },
+  days_offset: { type: Number, default: 0 },
+  message: { type: String, default: null },
+  is_sent: { type: Boolean, default: false },
+  is_read: { type: Boolean, default: false },
+  sent_at: { type: Date, default: null }
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: false }
+});
+
+paymentReminderSchema.virtual('id').get(function() { return this._id.toHexString(); });
+paymentReminderSchema.set('toJSON', { virtuals: true });
+paymentReminderSchema.set('toObject', { virtuals: true });
+
+const PaymentReminderDB = mongoose.model('PaymentReminder', paymentReminderSchema);
 
 const PaymentReminder = {
-  async create({ user_id, document_id, reminder_date, reminder_type, days_offset, message }) {
-    const pool = getPool();
-    const [result] = await pool.execute(
-      'INSERT INTO payment_reminders (user_id, document_id, reminder_date, reminder_type, days_offset, message) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, document_id, reminder_date, reminder_type || 'before_due', days_offset || 0, message || '']
-    );
-    return this.findById(result.insertId, user_id);
+  PaymentReminder: PaymentReminderDB,
+
+  async create(data) {
+    const reminder = new PaymentReminderDB(data);
+    await reminder.save();
+    return reminder;
   },
 
-  async findById(id, userId) {
-    const pool = getPool();
-    const [rows] = await pool.execute(
-      `SELECT pr.*, d.document_number, d.total, d.due_date as doc_due_date, d.status as doc_status,
-              d.transaction_type, d.document_type, c.name as contact_name
-       FROM payment_reminders pr
-       LEFT JOIN documents d ON pr.document_id = d.id
-       LEFT JOIN contacts c ON d.contact_id = c.id
-       WHERE pr.id = ? AND pr.user_id = ?`,
-      [id, userId]
-    );
-    return rows[0] || null;
-  },
+  async findAll(userId, { document_id, is_sent, is_read, sort, order, page, limit } = {}) {
+    let query = { user_id: userId };
+    if (document_id) query.document_id = document_id;
+    if (is_sent !== undefined) query.is_sent = is_sent === 'true' || is_sent === true;
+    if (is_read !== undefined) query.is_read = is_read === 'true' || is_read === true;
 
-  async findAll(userId, { transaction_type, status, page, limit } = {}) {
-    const pool = getPool();
-    let query = `
-      SELECT pr.*, d.document_number, d.total, d.due_date as doc_due_date, d.status as doc_status,
-             d.transaction_type, d.document_type, c.name as contact_name
-      FROM payment_reminders pr
-      LEFT JOIN documents d ON pr.document_id = d.id
-      LEFT JOIN contacts c ON d.contact_id = c.id
-      WHERE pr.user_id = ?
-    `;
-    const params = [userId];
-
-    if (transaction_type) {
-      query += ' AND d.transaction_type = ?';
-      params.push(transaction_type);
-    }
-    if (status === 'pending') {
-      query += ' AND pr.is_sent = 0';
-    } else if (status === 'sent') {
-      query += ' AND pr.is_sent = 1';
-    }
-
-    const countQuery = query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
-    const [countRows] = await pool.execute(countQuery, params);
-    const total = countRows[0].total;
-
-    query += ' ORDER BY pr.reminder_date ASC';
+    const sortField = sort || 'reminder_date';
+    const sortOrder = order === 'desc' ? -1 : 1;
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
     const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
-    query += ' LIMIT ? OFFSET ?';
-    params.push(limitNum, (pageNum - 1) * limitNum);
+    const skipNum = (pageNum - 1) * limitNum;
 
-    const [data] = await pool.execute(query, params);
+    const results = await PaymentReminderDB.find(query)
+      .populate('document_id', 'document_number total due_date')
+      .sort({ [sortField]: sortOrder })
+      .skip(skipNum)
+      .limit(limitNum);
+
+    const total = await PaymentReminderDB.countDocuments(query);
+
+    const data = results.map(r => {
+      const rem = r.toObject();
+      return {
+        ...rem,
+        document_number: rem.document_id ? rem.document_id.document_number : null,
+        document_total: rem.document_id ? rem.document_id.total : 0,
+        document_due_date: rem.document_id ? rem.document_id.due_date : null,
+        document_id: rem.document_id ? rem.document_id._id.toString() : null
+      };
+    });
+
     return { data, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   },
 
-  // Get upcoming reminders (due within next N days)
-  async getUpcoming(userId, days = 7) {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT pr.*, d.document_number, d.total, d.due_date as doc_due_date, d.status as doc_status,
-             d.transaction_type, d.document_type, c.name as contact_name
-      FROM payment_reminders pr
-      LEFT JOIN documents d ON pr.document_id = d.id
-      LEFT JOIN contacts c ON d.contact_id = c.id
-      WHERE pr.user_id = ? AND pr.is_sent = 0
-        AND pr.reminder_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)
-        AND d.status IN ('sent', 'overdue')
-      ORDER BY pr.reminder_date ASC
-    `, [userId, days]);
-    return rows;
+  async findById(id, userId) {
+    const r = await PaymentReminderDB.findOne({ _id: id, user_id: userId }).populate('document_id');
+    if (!r) return null;
+    return r.toObject();
   },
 
-  // Get overdue (unpaid) debts  
-  async getDebtSummary(userId) {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT d.id, d.document_number, d.total, d.due_date, d.status, d.issue_date,
-             d.transaction_type, d.document_type,
-             c.name as contact_name, c.email as contact_email,
-             DATEDIFF(CURDATE(), d.due_date) as days_overdue,
-             DATEDIFF(d.due_date, CURDATE()) as days_until_due
-      FROM documents d
-      LEFT JOIN contacts c ON d.contact_id = c.id
-      WHERE d.user_id = ? AND d.document_type = 'invoice' 
-        AND d.status IN ('sent', 'overdue')
-      ORDER BY d.due_date ASC
-    `, [userId]);
-
-    const debts = {
-      purchase: { upcoming: [], overdue: [], total_amount: 0, overdue_amount: 0 },
-      sales: { upcoming: [], overdue: [], total_amount: 0, overdue_amount: 0 }
-    };
-
-    for (const row of rows) {
-      row.total = parseFloat(row.total);
-      const type = row.transaction_type;
-      debts[type].total_amount += row.total;
-      
-      if (row.days_overdue > 0) {
-        debts[type].overdue.push(row);
-        debts[type].overdue_amount += row.total;
-      } else {
-        debts[type].upcoming.push(row);
-      }
-    }
-
-    return debts;
-  },
-
-  async markSent(id, userId) {
-    const pool = getPool();
-    await pool.execute(
-      'UPDATE payment_reminders SET is_sent = 1, sent_at = NOW() WHERE id = ? AND user_id = ?',
-      [id, userId]
-    );
-    return this.findById(id, userId);
-  },
-
-  async markRead(id, userId) {
-    const pool = getPool();
-    await pool.execute(
-      'UPDATE payment_reminders SET is_read = 1 WHERE id = ? AND user_id = ?',
-      [id, userId]
-    );
+  async update(id, userId, data) {
+    return PaymentReminderDB.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
   },
 
   async delete(id, userId) {
-    const pool = getPool();
-    const [result] = await pool.execute('DELETE FROM payment_reminders WHERE id = ? AND user_id = ?', [id, userId]);
-    return { changes: result.affectedRows };
+    const res = await PaymentReminderDB.deleteOne({ _id: id, user_id: userId });
+    return { changes: res.deletedCount };
   },
 
-  // Auto-generate reminders for a document (7 days before, 3 days before, on due date)
+  async markAsRead(id, userId) {
+    return PaymentReminderDB.findOneAndUpdate({ _id: id, user_id: userId }, { is_read: true });
+  },
+
   async autoGenerateReminders(userId, documentId) {
-    const pool = getPool();
-    const [docs] = await pool.execute('SELECT due_date, document_number, total FROM documents WHERE id = ? AND user_id = ?', [documentId, userId]);
-    if (!docs[0]) return;
+    const Document = require('./Document');
+    const doc = await Document.findById(documentId, userId);
+    if (!doc || doc.document_type !== 'invoice') return;
 
-    const doc = docs[0];
+    // Delete existing ones
+    await PaymentReminderDB.deleteMany({ document_id: documentId });
+
     const dueDate = new Date(doc.due_date);
+    const issueDate = new Date(doc.issue_date);
     
-    const reminders = [
-      { days: 7, type: 'before_due', msg: `Pengingat: Pembayaran ${doc.document_number} sebesar Rp${Number(doc.total).toLocaleString('id-ID')} jatuh tempo dalam 7 hari.` },
-      { days: 3, type: 'before_due', msg: `Peringatan: Pembayaran ${doc.document_number} sebesar Rp${Number(doc.total).toLocaleString('id-ID')} jatuh tempo dalam 3 hari!` },
-      { days: 0, type: 'on_due', msg: `JATUH TEMPO HARI INI: ${doc.document_number} sebesar Rp${Number(doc.total).toLocaleString('id-ID')} harus dibayar hari ini.` },
-    ];
+    // Default logic: Before due (if >3 days), On due, After due
+    const diffTime = Math.abs(dueDate - issueDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const reminders = [];
+    
+    // On due date
+    reminders.push({
+      user_id: userId,
+      document_id: documentId,
+      reminder_date: dueDate,
+      reminder_type: 'on_due',
+      days_offset: 0,
+      message: `Jatuh tempo hari ini untuk Invoice ${doc.document_number}`
+    });
 
-    for (const r of reminders) {
-      const reminderDate = new Date(dueDate);
-      reminderDate.setDate(reminderDate.getDate() - r.days);
-      
-      // Only create if reminder date is in the future
-      if (reminderDate >= new Date(new Date().toISOString().split('T')[0])) {
-        // Check duplicate
-        const [existing] = await pool.execute(
-          'SELECT id FROM payment_reminders WHERE user_id = ? AND document_id = ? AND days_offset = ? AND reminder_type = ?',
-          [userId, documentId, r.days, r.type]
-        );
-        if (existing.length === 0) {
-          await pool.execute(
-            'INSERT INTO payment_reminders (user_id, document_id, reminder_date, reminder_type, days_offset, message) VALUES (?, ?, ?, ?, ?, ?)',
-            [userId, documentId, reminderDate.toISOString().split('T')[0], r.type, r.days, r.msg]
-          );
-        }
-      }
+    // Before due date (if term > 3 days)
+    if (diffDays > 3) {
+      const beforeDate = new Date(dueDate);
+      beforeDate.setDate(beforeDate.getDate() - 3);
+      reminders.push({
+        user_id: userId,
+        document_id: documentId,
+        reminder_date: beforeDate,
+        reminder_type: 'before_due',
+        days_offset: -3,
+        message: `H-3 jatuh tempo untuk Invoice ${doc.document_number}`
+      });
     }
+
+    // After due date (D+3)
+    const afterDate = new Date(dueDate);
+    afterDate.setDate(afterDate.getDate() + 3);
+    reminders.push({
+      user_id: userId,
+      document_id: documentId,
+      reminder_date: afterDate,
+      reminder_type: 'after_due',
+      days_offset: 3,
+      message: `Telat 3 hari untuk Invoice ${doc.document_number}`
+    });
+
+    await PaymentReminderDB.insertMany(reminders);
   },
 
-  // Process pending reminders (called by scheduler)
   async processPendingReminders() {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT pr.*, d.status as doc_status
-      FROM payment_reminders pr
-      LEFT JOIN documents d ON pr.document_id = d.id
-      WHERE pr.is_sent = 0 AND pr.reminder_date <= CURDATE()
-        AND d.status IN ('sent', 'overdue')
-    `);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    for (const reminder of rows) {
-      await pool.execute(
-        'UPDATE payment_reminders SET is_sent = 1, sent_at = NOW() WHERE id = ?',
-        [reminder.id]
-      );
+    const reminders = await PaymentReminderDB.find({
+      is_sent: false,
+      reminder_date: { $gte: today, $lt: tomorrow }
+    }).populate('document_id');
+
+    let processedCount = 0;
+    const { ActivityLog } = require('./ActivityLog');
+
+    for (const reminder of reminders) {
+      if (reminder.document_id && reminder.document_id.status === 'paid') {
+        reminder.is_sent = true;
+        await reminder.save();
+        continue;
+      }
+
+      const docNumber = reminder.document_id ? reminder.document_id.document_number : 'Unknown';
+      await ActivityLog.create({
+        user_id: reminder.user_id,
+        document_id: reminder.document_id ? reminder.document_id._id : null,
+        action: 'PAYMENT_REMINDER',
+        details: `Reminder ${reminder.reminder_type}: ${docNumber}`
+      });
+
+      reminder.is_sent = true;
+      reminder.sent_at = new Date();
+      await reminder.save();
+      processedCount++;
     }
-    return rows.length;
+
+    return processedCount;
+  },
+  async getUpcoming(userId, days) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const futureDate = new Date(today);
+    futureDate.setDate(futureDate.getDate() + days);
+
+    const reminders = await PaymentReminderDB.find({
+      user_id: userId,
+      is_sent: false,
+      reminder_date: { $gte: today, $lte: futureDate }
+    }).populate('document_id').sort({ reminder_date: 1 });
+
+    return reminders.map(r => r.toObject());
+  },
+
+  async getDebtSummary(userId) {
+    const mongoose = require('mongoose');
+    require('./Document'); // Ensure schema is registered
+    const DocumentModel = mongoose.model('Document');
+    
+    const docs = await DocumentModel.find({
+      user_id: userId,
+      document_type: 'invoice',
+      status: { $in: ['sent', 'overdue'] }
+    }).populate('contact_id');
+
+    const summary = {
+      sales: { total_amount: 0, overdue_amount: 0, overdue: [], upcoming: [] },
+      purchase: { total_amount: 0, overdue_amount: 0, overdue: [], upcoming: [] }
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    docs.forEach(d => {
+      const type = d.transaction_type;
+      if (!summary[type]) return;
+
+      summary[type].total_amount += d.total;
+
+      const dueDate = new Date(d.due_date);
+      const docObj = d.toObject();
+      docObj.contact_name = d.contact_id ? d.contact_id.name : null;
+      docObj.id = docObj._id.toString();
+      
+      const diffTime = dueDate - today;
+      docObj.days_until_due = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      docObj.days_overdue = -docObj.days_until_due;
+
+      if (dueDate < today) {
+        summary[type].overdue_amount += d.total;
+        summary[type].overdue.push(docObj);
+      } else {
+        summary[type].upcoming.push(docObj);
+      }
+    });
+
+    return summary;
   }
 };
 

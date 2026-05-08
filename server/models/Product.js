@@ -1,60 +1,65 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Product = {
-  async create({ user_id, name, description, unit, price, stock, category }) {
-    const pool = getPool();
-    const [result] = await pool.execute(
-      'INSERT INTO products (user_id, name, description, unit, price, stock, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [user_id, name, description || '', unit || 'pcs', price, stock || 0, category || '']
-    );
-    return this.findById(result.insertId, user_id);
+const productSchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  name: { type: String, required: true },
+  description: { type: String, default: null },
+  unit: { type: String, default: 'pcs' },
+  price: { type: Number, required: true, default: 0 },
+  stock: { type: Number, default: 0 },
+  category: { type: String, default: '' }
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+productSchema.virtual('id').get(function() { return this._id.toHexString(); });
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
+
+const Product = mongoose.model('Product', productSchema);
+
+const ProductModel = {
+  async create(data) {
+    const prod = new Product(data);
+    await prod.save();
+    return prod;
   },
-
-  async findById(id, userId) {
-    const pool = getPool();
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ? AND user_id = ?', [id, userId]);
-    return rows[0] || null;
-  },
-
-  async findAll(userId, { search, category, page, limit } = {}) {
-    const pool = getPool();
-    let query = 'SELECT * FROM products WHERE user_id = ?';
-    const params = [userId];
-    if (search) { query += ' AND (name LIKE ? OR description LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-    if (category) { query += ' AND category = ?'; params.push(category); }
-
-    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countRows] = await pool.execute(countQuery, params);
-    const total = countRows[0].total;
-
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 20);
-    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
-    params.push(limitNum, (pageNum - 1) * limitNum);
-
-    const [data] = await pool.execute(query, params);
-    return { data, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
-  },
-
-  async update(id, userId, data) {
-    const pool = getPool();
-    const fields = [];
-    const values = [];
-    const allowed = ['name', 'description', 'unit', 'price', 'stock', 'category'];
-    for (const key of allowed) {
-      if (data[key] !== undefined) { fields.push(`${key} = ?`); values.push(data[key]); }
+  async findAll(userId, filters = {}) {
+    let query = { user_id: userId };
+    if (filters.search) {
+      query.$or = [
+        { name: new RegExp(filters.search, 'i') },
+        { description: new RegExp(filters.search, 'i') },
+        { category: new RegExp(filters.search, 'i') }
+      ];
     }
-    if (fields.length === 0) return this.findById(id, userId);
-    values.push(id, userId);
-    await pool.execute(`UPDATE products SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`, values);
-    return this.findById(id, userId);
-  },
+    
+    let sortObj = {};
+    if (filters.sort) {
+      sortObj[filters.sort] = filters.order === 'desc' ? -1 : 1;
+    } else {
+      sortObj['created_at'] = -1;
+    }
 
+    const limit = filters.limit ? parseInt(filters.limit) : 20;
+    const page = filters.page ? parseInt(filters.page) : 1;
+    const skip = (page - 1) * limit;
+
+    const data = await Product.find(query).sort(sortObj).skip(skip).limit(limit);
+    const total = await Product.countDocuments(query);
+    
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
+  },
+  async findById(id, userId) {
+    return Product.findOne({ _id: id, user_id: userId });
+  },
+  async update(id, userId, data) {
+    return Product.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
+  },
   async delete(id, userId) {
-    const pool = getPool();
-    const [result] = await pool.execute('DELETE FROM products WHERE id = ? AND user_id = ?', [id, userId]);
-    return { changes: result.affectedRows };
+    const res = await Product.deleteOne({ _id: id, user_id: userId });
+    return { changes: res.deletedCount };
   }
 };
 
-module.exports = Product;
+module.exports = { Product, ...ProductModel };

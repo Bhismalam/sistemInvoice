@@ -1,81 +1,66 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Contact = {
-  async create({ user_id, type, name, email, phone, address, notes }) {
-    const pool = getPool();
-    const [result] = await pool.execute(
-      'INSERT INTO contacts (user_id, type, name, email, phone, address, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [user_id, type, name, email || '', phone || '', address || '', notes || '']
-    );
-    return this.findById(result.insertId, user_id);
+const contactSchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, enum: ['customer', 'supplier'], required: true },
+  name: { type: String, required: true },
+  email: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  address: { type: String, default: null },
+  notes: { type: String, default: null }
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+contactSchema.virtual('id').get(function() { return this._id.toHexString(); });
+contactSchema.set('toJSON', { virtuals: true });
+contactSchema.set('toObject', { virtuals: true });
+
+const Contact = mongoose.model('Contact', contactSchema);
+
+const ContactModel = {
+  async create(data) {
+    const contact = new Contact(data);
+    await contact.save();
+    return contact;
   },
+  async findAll(userId, filters = {}) {
+    let query = { user_id: userId };
+    if (filters.type) query.type = filters.type;
+    if (filters.search) {
+      query.$or = [
+        { name: new RegExp(filters.search, 'i') },
+        { email: new RegExp(filters.search, 'i') },
+        { phone: new RegExp(filters.search, 'i') }
+      ];
+    }
+    
+    let sortObj = {};
+    if (filters.sort) {
+      sortObj[filters.sort] = filters.order === 'desc' ? -1 : 1;
+    } else {
+      sortObj['created_at'] = -1;
+    }
 
+    const limit = filters.limit ? parseInt(filters.limit) : 20;
+    const page = filters.page ? parseInt(filters.page) : 1;
+    const skip = (page - 1) * limit;
+
+    const data = await Contact.find(query).sort(sortObj).skip(skip).limit(limit);
+    const total = await Contact.countDocuments(query);
+    
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
+  },
   async findById(id, userId) {
-    const pool = getPool();
-    const [rows] = await pool.execute('SELECT * FROM contacts WHERE id = ? AND user_id = ?', [id, userId]);
-    return rows[0] || null;
+    return Contact.findOne({ _id: id, user_id: userId });
   },
-
-  async findAll(userId, { type, search, page, limit } = {}) {
-    const pool = getPool();
-    let query = 'SELECT * FROM contacts WHERE user_id = ?';
-    const params = [userId];
-
-    if (type) { query += ' AND type = ?'; params.push(type); }
-    if (search) { query += ' AND (name LIKE ? OR email LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-
-    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countRows] = await pool.execute(countQuery, params);
-    const total = countRows[0].total;
-
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, parseInt(limit) || 20);
-    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
-    params.push(limitNum, (pageNum - 1) * limitNum);
-
-    const [data] = await pool.execute(query, params);
-
-    // Add document stats for each contact
-    for (const contact of data) {
-      const [statsRows] = await pool.execute(
-        `SELECT COUNT(*) as invoice_count, COALESCE(SUM(total), 0) as total_revenue,
-                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
-                SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_count
-         FROM documents WHERE contact_id = ? AND user_id = ? AND transaction_type = 'sales' AND document_type = 'invoice'`,
-        [contact.id, userId]
-      );
-      const stats = statsRows[0];
-      contact.stats = stats;
-      if (stats.invoice_count > 0) {
-        const ratio = stats.paid_count / stats.invoice_count;
-        contact.payment_score = Math.max(1, Math.round(ratio * 5));
-      } else {
-        contact.payment_score = 0;
-      }
-    }
-
-    return { data, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
-  },
-
   async update(id, userId, data) {
-    const pool = getPool();
-    const fields = [];
-    const values = [];
-    const allowed = ['type', 'name', 'email', 'phone', 'address', 'notes'];
-    for (const key of allowed) {
-      if (data[key] !== undefined) { fields.push(`${key} = ?`); values.push(data[key]); }
-    }
-    if (fields.length === 0) return this.findById(id, userId);
-    values.push(id, userId);
-    await pool.execute(`UPDATE contacts SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`, values);
-    return this.findById(id, userId);
+    return Contact.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
   },
-
   async delete(id, userId) {
-    const pool = getPool();
-    const [result] = await pool.execute('DELETE FROM contacts WHERE id = ? AND user_id = ?', [id, userId]);
-    return { changes: result.affectedRows };
+    const res = await Contact.deleteOne({ _id: id, user_id: userId });
+    return { changes: res.deletedCount };
   }
 };
 
-module.exports = Contact;
+module.exports = { Contact, ...ContactModel };

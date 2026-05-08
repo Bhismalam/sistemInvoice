@@ -1,12 +1,25 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
 
-const ActivityLog = {
+const activityLogSchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  document_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Document', default: null },
+  action: { type: String, required: true },
+  details: { type: String, default: '' }
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: false }
+});
+
+activityLogSchema.virtual('id').get(function() { return this._id.toHexString(); });
+activityLogSchema.set('toJSON', { virtuals: true });
+activityLogSchema.set('toObject', { virtuals: true });
+
+const ActivityLog = mongoose.model('ActivityLog', activityLogSchema);
+
+const ActivityLogModel = {
   async create({ user_id, document_id, action, details }) {
-    const pool = getPool();
-    await pool.execute(
-      'INSERT INTO activity_logs (user_id, document_id, action, details) VALUES (?, ?, ?, ?)',
-      [user_id, document_id || null, action, details || '']
-    );
+    const log = new ActivityLog({ user_id, document_id, action, details });
+    await log.save();
+    return log;
   },
 
   async log(user_id, document_id, action, details = '') {
@@ -14,29 +27,31 @@ const ActivityLog = {
   },
 
   async findAll(userId, limit = 20) {
-    const pool = getPool();
-    const [rows] = await pool.execute(`
-      SELECT al.*, d.document_number, c.name as contact_name
-      FROM activity_logs al
-      LEFT JOIN documents d ON al.document_id = d.id
-      LEFT JOIN contacts c ON d.contact_id = c.id
-      WHERE al.user_id = ?
-      ORDER BY al.created_at DESC, al.id DESC
-      LIMIT ?
-    `, [userId, limit]);
-    return rows;
+    return ActivityLog.find({ user_id: userId })
+      .sort({ created_at: -1, _id: -1 })
+      .limit(limit)
+      .populate({
+        path: 'document_id',
+        select: 'document_number contact_id',
+        populate: { path: 'contact_id', select: 'name' }
+      })
+      .then(logs => logs.map(log => {
+        const doc = log.toObject();
+        return {
+          ...doc,
+          document_number: doc.document_id ? doc.document_id.document_number : null,
+          contact_name: doc.document_id && doc.document_id.contact_id ? doc.document_id.contact_id.name : null,
+          document_id: doc.document_id ? doc.document_id._id.toString() : null
+        };
+      }));
   },
 
   async countUnread(userId) {
-    const pool = getPool();
-    const [userRows] = await pool.execute('SELECT notifications_read_at FROM users WHERE id = ?', [userId]);
-    const since = userRows[0]?.notifications_read_at || '1970-01-01';
-    const [rows] = await pool.execute(
-      'SELECT COUNT(*) as count FROM activity_logs WHERE user_id = ? AND created_at > ?',
-      [userId, since]
-    );
-    return rows[0].count;
+    const { User } = require('./User');
+    const user = await User.findById(userId);
+    const since = user && user.notifications_read_at ? user.notifications_read_at : new Date(0);
+    return ActivityLog.countDocuments({ user_id: userId, created_at: { $gt: since } });
   }
 };
 
-module.exports = ActivityLog;
+module.exports = { ActivityLog, ...ActivityLogModel };

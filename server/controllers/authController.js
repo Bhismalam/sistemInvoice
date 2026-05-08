@@ -1,6 +1,10 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { User, RefreshToken } = require('../models/User');
+// In the new mongoose model, all methods are exported as part of the default object.
+// We rename the destructured object to UserModel to avoid conflicts, then assign it to User.
+const UserModel = require('../models/User');
+// We override User with the UserModel object that contains findByEmail, create, etc.
+const User = UserModel;
 
 function generateAccessToken(user) {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '15m' });
@@ -24,8 +28,7 @@ const authController = {
       const refreshToken = generateRefreshToken(user);
       
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' '); // MySQL format
-      await RefreshToken.create(user.id, refreshToken, expiresAtStr);
+      await User.saveRefreshToken(user.id, refreshToken, expiresAt);
       
       res.status(201).json({ success: true, message: 'Registrasi berhasil!', data: { user, accessToken, refreshToken } });
     } catch (error) { next(error); }
@@ -46,8 +49,7 @@ const authController = {
       const refreshToken = generateRefreshToken(user);
       
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' '); // MySQL format
-      await RefreshToken.create(user.id, refreshToken, expiresAtStr);
+      await User.saveRefreshToken(user.id, refreshToken, expiresAt);
       
       const userData = await User.findById(user.id);
       res.json({ success: true, message: 'Login berhasil!', data: { user: userData, accessToken, refreshToken } });
@@ -79,8 +81,7 @@ const authController = {
       const refreshToken = generateRefreshToken(user);
       
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expiresAtStr = expiresAt.toISOString().slice(0, 19).replace('T', ' '); // MySQL format
-      await RefreshToken.create(user.id, refreshToken, expiresAtStr);
+      await User.saveRefreshToken(user.id, refreshToken, expiresAt);
       
       const userData = await User.findById(user.id);
       res.json({ success: true, message: 'Google Login berhasil!', data: { user: userData, accessToken, refreshToken } });
@@ -93,9 +94,9 @@ const authController = {
       if (!refreshToken) {
         return res.status(400).json({ success: false, message: 'Refresh token diperlukan.' });
       }
-      const stored = await RefreshToken.find(refreshToken);
-      if (!stored) {
-        return res.status(403).json({ success: false, message: 'Refresh token tidak valid.' });
+      const userWithToken = await User.verifyRefreshToken(refreshToken);
+      if (!userWithToken) {
+        return res.status(403).json({ success: false, message: 'Refresh token tidak valid atau sudah kadaluarsa.' });
       }
       try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -104,7 +105,8 @@ const authController = {
         const newAccessToken = generateAccessToken(user);
         res.json({ success: true, data: { accessToken: newAccessToken } });
       } catch (e) {
-        await RefreshToken.delete(refreshToken);
+        // Jika JWT verify gagal, token dihapus
+        await User.clearRefreshToken(userWithToken.id, refreshToken);
         return res.status(403).json({ success: false, message: 'Refresh token kadaluarsa.' });
       }
     } catch (error) { next(error); }
@@ -113,7 +115,17 @@ const authController = {
   async logout(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      if (refreshToken) await RefreshToken.delete(refreshToken);
+      if (refreshToken) {
+        // Jika memungkinkan, verifikasi token untuk mendapatkan user_id.
+        // Tapi cara termudah jika kita tidak kirimkan user_id di request:
+        // Coba cari dari DB dan pull.
+        try {
+            const userWithToken = await User.verifyRefreshToken(refreshToken);
+            if(userWithToken) {
+                await User.clearRefreshToken(userWithToken.id, refreshToken);
+            }
+        } catch(e) {}
+      }
       res.json({ success: true, message: 'Logout berhasil.' });
     } catch (error) { next(error); }
   },
