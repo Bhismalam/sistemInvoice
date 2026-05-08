@@ -78,29 +78,33 @@ if (process.env.NODE_ENV !== 'test') {
   const Document = require('./models/Document');
   const PaymentReminder = require('./models/PaymentReminder');
 
-  setInterval(async () => {
+  // Background scheduler for long-running servers (like Render/VPS)
+  if (!process.env.VERCEL) {
+    setInterval(async () => {
+      try {
+        const deleted = await Document.cleanupCancelledDocuments();
+        const overdue = await Document.markOverdueDocuments();
+        const reminders = await PaymentReminder.processPendingReminders();
+        if (deleted > 0 || overdue > 0 || reminders > 0) {
+          console.log(`⏰ Scheduler: ${deleted} cancelled deleted, ${overdue} marked overdue, ${reminders} reminders processed`);
+        }
+      } catch (err) {
+        console.error('Scheduler error:', err.message);
+      }
+    }, 60 * 60 * 1000);
+  }
+
+  // API Endpoint for Serverless environments (like Vercel Cron)
+  app.get('/api/cron', async (req, res) => {
     try {
       const deleted = await Document.cleanupCancelledDocuments();
       const overdue = await Document.markOverdueDocuments();
       const reminders = await PaymentReminder.processPendingReminders();
-      if (deleted > 0 || overdue > 0 || reminders > 0) {
-        console.log(`⏰ Scheduler: ${deleted} cancelled deleted, ${overdue} marked overdue, ${reminders} reminders processed`);
-      }
+      res.json({ success: true, deleted, overdue, reminders });
     } catch (err) {
-      console.error('Scheduler error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
     }
-  }, 60 * 60 * 1000);
-
-  setTimeout(async () => {
-    try {
-      await Document.cleanupCancelledDocuments();
-      await Document.markOverdueDocuments();
-      await PaymentReminder.processPendingReminders();
-      console.log('⏰ Initial scheduler run complete');
-    } catch (err) {
-      console.error('Initial scheduler error:', err.message);
-    }
-  }, 5000);
+  });
 }
 
 // === ERROR HANDLING ===
