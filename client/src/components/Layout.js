@@ -94,13 +94,9 @@ export function renderLayout(container, activePage) {
           
           <div class="sidebar__divider"></div>
           
-          <a href="#/settings" class="nav-item ${currentPath.startsWith('#/settings') ? 'active' : ''}">
-            <span class="nav-item__icon">⚙️</span>
-            <span class="nav-item__text">Pengaturan Akun</span>
-          </a>
           <a href="#/company" class="nav-item ${currentPath.startsWith('#/company') ? 'active' : ''}">
-            <span class="nav-item__icon">🏢</span>
-            <span class="nav-item__text">Perusahaan</span>
+            <span class="nav-item__icon">⚙️</span>
+            <span class="nav-item__text">Pengaturan</span>
           </a>
         </nav>
       <div class="sidebar__footer">

@@ -282,6 +282,38 @@ const authController = {
         }
       });
     } catch (error) { next(error); }
+  },
+
+  /**
+   * Update user profile (name, phone).
+   */
+  async updateProfile(req, res, next) {
+    try {
+      const { name, phone } = req.body;
+      const user = await User.update(req.user.id, { name, phone });
+      if (!user) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+      res.json({ success: true, message: 'Profil berhasil disimpan!', data: user });
+    } catch (error) { next(error); }
+  },
+
+  /**
+   * Change user password.
+   */
+  async changePassword(req, res, next) {
+    try {
+      const { old_password, new_password } = req.body;
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+
+      const valid = await bcrypt.compare(old_password, user.password_hash);
+      if (!valid) {
+        return res.status(400).json({ success: false, message: 'Password lama salah.' });
+      }
+
+      const password_hash = await bcrypt.hash(new_password, 12);
+      await User.update(req.user.id, { password_hash });
+      res.json({ success: true, message: 'Password berhasil diganti!' });
+    } catch (error) { next(error); }
   }
 };
 

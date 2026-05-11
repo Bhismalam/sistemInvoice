@@ -29,4 +29,15 @@ router.get('/me', authenticate, authController.me);
 // Validate invitation token (public - no auth needed)
 router.get('/invite/:token', authController.validateInvite);
 
+// Profile management (authenticated)
+router.put('/update-profile', authenticate, [
+  body('name').optional().trim(),
+  body('phone').optional().trim()
+], validate, authController.updateProfile);
+
+router.put('/change-password', authenticate, [
+  body('old_password').notEmpty().withMessage('Password lama harus diisi.'),
+  body('new_password').isLength({ min: 8 }).withMessage('Password baru minimal 8 karakter.')
+], validate, authController.changePassword);
+
 module.exports = router;

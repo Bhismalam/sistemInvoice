@@ -8,11 +8,12 @@ export function renderCompanySettings(container) {
   page.innerHTML = `
     <div class="settings-container" style="margin-top: 0;">
       <div class="settings-header-section">
-        <h1 class="page-title">⚙️ Pengaturan Perusahaan</h1>
-        <p class="page-subtitle">Kelola profil bisnis, tim, dan hak akses dalam satu tempat.</p>
+        <h1 class="page-title">⚙️ Pengaturan</h1>
+        <p class="page-subtitle">Kelola akun, profil bisnis, tim, dan hak akses dalam satu tempat.</p>
         
         <div class="settings-nav" id="company-settings-tabs">
-          <button class="settings-nav-item active" data-tab="profile">🏢 Profil Bisnis</button>
+          <button class="settings-nav-item active" data-tab="account">👤 Profil Akun</button>
+          <button class="settings-nav-item" data-tab="profile">🏢 Profil Bisnis</button>
           <button class="settings-nav-item" data-tab="members">👥 Anggota Tim</button>
           <button class="settings-nav-item" data-tab="roles">🔐 Hak Akses (Roles)</button>
         </div>
@@ -33,7 +34,7 @@ export function renderCompanySettings(container) {
     });
   });
 
-  loadTab('profile', page);
+  loadTab('account', page);
 }
 
 function getId(obj) {
@@ -46,7 +47,8 @@ async function loadTab(tab, page) {
   content.innerHTML = '<div class="loading-spinner"><span class="spinner"></span> Memuat...</div>';
 
   try {
-    if (tab === 'profile') await renderProfileTab(content, page);
+    if (tab === 'account') await renderAccountTab(content, page);
+    else if (tab === 'profile') await renderProfileTab(content, page);
     else if (tab === 'members') await renderMembersTab(content, page);
     else if (tab === 'roles') await renderRolesTab(content, page);
   } catch (err) {
@@ -65,6 +67,125 @@ async function loadTab(tab, page) {
       </div>
     `;
   }
+}
+
+// === ACCOUNT TAB (NEW - replaces old Settings page) ===
+async function renderAccountTab(content, page) {
+  const res = await api('/auth/me');
+  const { user, company, role } = res.data;
+
+  content.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:var(--space-xl)">
+      <!-- User Info Card -->
+      <div class="card" style="padding:var(--space-xl)">
+        <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-xl)">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:white;flex-shrink:0">
+            ${(user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+          </div>
+          <div>
+            <h2 style="margin:0;font-size:1.25rem;font-weight:700">${user.name}</h2>
+            <p style="margin:4px 0 0 0;color:var(--text-secondary);font-size:0.9rem">${user.email}</p>
+            <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-sm);flex-wrap:wrap">
+              <span class="status-pill status-pill--active">
+                <span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>
+                ${role ? role.name : 'Tanpa Role'}
+              </span>
+              ${company ? `<span style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:4px">🏢 ${company.name}</span>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <form id="account-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nama Lengkap</label>
+              <input type="text" class="form-input" id="acc-name" value="${user.name || ''}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="acc-email" value="${user.email || ''}" disabled style="opacity:0.6;cursor:not-allowed" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nomor HP</label>
+              <input type="tel" class="form-input" id="acc-phone" value="${user.phone || ''}" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">💾 Simpan Profil</button>
+        </form>
+      </div>
+
+      <!-- Role & Permissions Summary -->
+      ${role ? `
+      <div class="card" style="padding:var(--space-xl)">
+        <h3 style="margin-bottom:var(--space-lg);font-weight:600">🔐 Hak Akses Anda</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-sm)">
+          ${(role.permissions || []).map(p => {
+            const [action, resource] = p.split(':');
+            const icons = { create: '➕', read: '👁️', update: '✏️', delete: '🗑️' };
+            return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:500;background:rgba(99,102,241,0.1);color:var(--accent-primary)">${icons[action] || '•'} ${action}:${resource}</span>`;
+          }).join('')}
+        </div>
+        ${role.name === 'Owner' ? '<p style="margin-top:var(--space-md);font-size:0.85rem;color:var(--text-muted)">💡 Sebagai Owner, Anda memiliki akses penuh ke semua fitur.</p>' : ''}
+      </div>` : ''}
+
+      <!-- Change Password -->
+      <div class="card" style="padding:var(--space-xl)">
+        <h3 style="margin-bottom:var(--space-lg);font-weight:600">🔑 Ganti Password</h3>
+        <form id="password-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Password Lama</label>
+              <input type="password" class="form-input" id="pw-old" placeholder="Masukkan password lama" required minlength="8" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password Baru</label>
+              <input type="password" class="form-input" id="pw-new" placeholder="Minimal 8 karakter" required minlength="8" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">🔄 Ganti Password</button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  // Save profile
+  page.querySelector('#account-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/auth/update-profile', {
+        method: 'PUT',
+        body: {
+          name: page.querySelector('#acc-name').value,
+          phone: page.querySelector('#acc-phone').value
+        }
+      });
+      // Update local storage
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      stored.name = page.querySelector('#acc-name').value;
+      stored.phone = page.querySelector('#acc-phone').value;
+      localStorage.setItem('user', JSON.stringify(stored));
+      showToast('Profil berhasil disimpan!', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  // Change password
+  page.querySelector('#password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/auth/change-password', {
+        method: 'PUT',
+        body: {
+          old_password: page.querySelector('#pw-old').value,
+          new_password: page.querySelector('#pw-new').value
+        }
+      });
+      page.querySelector('#pw-old').value = '';
+      page.querySelector('#pw-new').value = '';
+      showToast('Password berhasil diganti!', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
+  });
 }
 
 // === PROFILE TAB ===

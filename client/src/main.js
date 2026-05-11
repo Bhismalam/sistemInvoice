@@ -55,7 +55,7 @@ router
   .add('/contacts', renderContacts)
   .add('/products', renderProducts)
   .add('/reports', renderReports)
-  .add('/settings', renderSettings)
+  .add('/settings', () => { window.location.hash = '#/company'; })
   .add('/company', renderCompanySettings);
 
 router.start();
