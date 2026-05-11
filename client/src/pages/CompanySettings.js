@@ -20,9 +20,9 @@ export async function renderCompanySettings(container) {
   const { role, company } = userInfo;
   const perms = role?.permissions || [];
   const isOwner = role?.name === 'Owner';
-  const canManageMembers = isOwner || perms.includes('read:members');
-  const canManageRoles = isOwner || perms.includes('read:roles');
-  const canEditCompany = isOwner || perms.includes('update:company_settings');
+  const canManageMembers = isOwner || perms.includes('manage:members');
+  const canManageRoles = isOwner || perms.includes('manage:roles');
+  const canEditCompany = isOwner; // Force only Owner to edit company profile per user request
 
   page.innerHTML = `
     <div class="settings-container" style="margin-top: 0;">
@@ -292,7 +292,7 @@ async function renderMembersTab(content, page) {
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
         <h3>👥 Anggota Tim (${members.length})</h3>
-        <button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>
+        ${isOwner || perms.includes('manage:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>' : ''}
       </div>
       <div style="overflow-x:auto">
         <table class="table">
@@ -301,12 +301,13 @@ async function renderMembersTab(content, page) {
             ${members.map(m => {
               const memberId = getId(m);
               const memberRoleId = m.role_id ? (typeof m.role_id === 'object' ? getId(m.role_id) : m.role_id) : '';
+              const canEditThisMember = (isOwner || perms.includes('manage:members')) && !m.is_owner;
               return `
               <tr>
                 <td><strong>${m.name}</strong> ${m.is_owner ? '<span class="badge badge-success">Owner</span>' : ''}</td>
                 <td>${m.email}</td>
                 <td>${m.role_name || 'Tanpa Role'}</td>
-                <td>${m.is_owner ? '<span style="color:var(--text-muted)">—</span>' : `
+                <td>${!canEditThisMember ? '<span style="color:var(--text-muted)">—</span>' : `
                   <div style="display:flex;align-items:center;gap:var(--space-sm)">
                     <select class="form-input form-input--sm member-role-select" data-member-id="${memberId}">
                       ${roles.map(r => `<option value="${getId(r)}" ${memberRoleId === getId(r) ? 'selected' : ''}>${r.name}</option>`).join('')}
@@ -345,10 +346,12 @@ async function renderMembersTab(content, page) {
   `;
 
   // Invite modal events
-  page.querySelector('#btn-invite-member').addEventListener('click', () => {
-    page.querySelector('#invite-modal').style.display = 'flex';
-    page.querySelector('#invite-result').style.display = 'none';
-  });
+  if (page.querySelector('#btn-invite-member')) {
+    page.querySelector('#btn-invite-member').addEventListener('click', () => {
+      page.querySelector('#invite-modal').style.display = 'flex';
+      page.querySelector('#invite-result').style.display = 'none';
+    });
+  }
   page.querySelector('#btn-close-invite').addEventListener('click', () => {
     page.querySelector('#invite-modal').style.display = 'none';
   });
@@ -405,7 +408,7 @@ async function renderRolesTab(content, page) {
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
         <h3>🔐 Konfigurasi Role Akses</h3>
-        <button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>
+        ${isOwner || perms.includes('manage:roles') ? '<button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>' : ''}
       </div>
       
       <div class="roles-matrix">
@@ -475,8 +478,8 @@ async function renderRolesTab(content, page) {
                   </td>
                   <td style="text-align:center">
                     <div class="action-group" style="justify-content:center">
-                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="Atur Hak Akses">⚙️</button>
-                      ${r.is_default ? '' : `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>`}
+                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="${isOwner || perms.includes('manage:roles') ? 'Atur Hak Akses' : 'Lihat Detail'}">⚙️</button>
+                      ${(!r.is_default && (isOwner || perms.includes('manage:roles'))) ? `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>` : ''}
                     </div>
                   </td>
                 </tr>
@@ -505,8 +508,8 @@ async function renderRolesTab(content, page) {
         </div>
 
         <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl);justify-content:flex-end">
-          <button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>
-          <button class="btn" id="btn-cancel-role-modal">Batal</button>
+          ${isOwner || perms.includes('manage:roles') ? '<button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>' : ''}
+          <button class="btn" id="btn-cancel-role-modal">${isOwner || perms.includes('manage:roles') ? 'Batal' : 'Tutup'}</button>
         </div>
       </div>
     </div>
@@ -547,44 +550,48 @@ function setupRoleEvents(page, roles, allPerms) {
   page.querySelector('#btn-cancel-role-modal').onclick = closeModal;
 
   // Save Role Details
-  page.querySelector('#btn-save-role-detail').onclick = async () => {
-    const btn = page.querySelector('#btn-save-role-detail');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  if (page.querySelector('#btn-save-role-detail')) {
+    page.querySelector('#btn-save-role-detail').onclick = async () => {
+      const btn = page.querySelector('#btn-save-role-detail');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
 
-    const permissions = [];
-    page.querySelectorAll('.modal-perm-toggle').forEach(cb => {
-      if (cb.checked) permissions.push(cb.dataset.perm);
-    });
-
-    try {
-      await api(`/company/roles/${currentRoleId}`, {
-        method: 'PUT',
-        body: {
-          description: page.querySelector('#modal-role-desc').value,
-          permissions
-        }
+      const permissions = [];
+      page.querySelectorAll('.modal-perm-toggle').forEach(cb => {
+        if (cb.checked) permissions.push(cb.dataset.perm);
       });
-      showToast('Role berhasil diperbarui!', 'success');
-      renderRolesTab(page.querySelector('#company-settings-content'), page);
-      closeModal();
-    } catch (err) { showToast(err.message, 'error'); }
-    finally {
-      btn.disabled = false;
-      btn.innerHTML = '💾 Simpan Perubahan';
-    }
-  };
+
+      try {
+        await api(`/company/roles/${currentRoleId}`, {
+          method: 'PUT',
+          body: {
+            description: page.querySelector('#modal-role-desc').value,
+            permissions
+          }
+        });
+        showToast('Role berhasil diperbarui!', 'success');
+        renderRolesTab(page.querySelector('#company-settings-content'), page);
+        closeModal();
+      } catch (err) { showToast(err.message, 'error'); }
+      finally {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Simpan Perubahan';
+      }
+    };
+  }
 
   // Add role
-  page.querySelector('#btn-add-role').onclick = async () => {
-    const name = prompt('Masukkan nama role baru:');
-    if (!name) return;
-    try {
-      await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
-      showToast('Role berhasil dibuat!', 'success');
-      renderRolesTab(page.querySelector('#company-settings-content'), page);
-    } catch (err) { showToast(err.message, 'error'); }
-  };
+  if (page.querySelector('#btn-add-role')) {
+    page.querySelector('#btn-add-role').onclick = async () => {
+      const name = prompt('Masukkan nama role baru:');
+      if (!name) return;
+      try {
+        await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
+        showToast('Role berhasil dibuat!', 'success');
+        renderRolesTab(page.querySelector('#company-settings-content'), page);
+      } catch (err) { showToast(err.message, 'error'); }
+    };
+  }
 
   // Delete role
   page.querySelectorAll('.btn-delete-role').forEach(btn => {
