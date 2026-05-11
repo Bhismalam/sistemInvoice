@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const contactSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   type: { type: String, enum: ['customer', 'supplier'], required: true },
   name: { type: String, required: true },
   email: { type: String, default: '' },

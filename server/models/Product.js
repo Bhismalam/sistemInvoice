@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   name: { type: String, required: true },
   description: { type: String, default: null },
   unit: { type: String, default: 'pcs' },

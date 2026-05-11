@@ -4,6 +4,7 @@ import { getInitials } from '../utils/format.js';
 
 export function renderLayout(container, activePage) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const company = JSON.parse(localStorage.getItem('company') || '{}');
   const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
   const currentPath = window.location.hash;
 
@@ -95,7 +96,11 @@ export function renderLayout(container, activePage) {
           
           <a href="#/settings" class="nav-item ${currentPath.startsWith('#/settings') ? 'active' : ''}">
             <span class="nav-item__icon">⚙️</span>
-            <span class="nav-item__text">Pengaturan</span>
+            <span class="nav-item__text">Pengaturan Akun</span>
+          </a>
+          <a href="#/company" class="nav-item ${currentPath.startsWith('#/company') ? 'active' : ''}">
+            <span class="nav-item__icon">🏢</span>
+            <span class="nav-item__text">Perusahaan</span>
           </a>
         </nav>
       <div class="sidebar__footer">
@@ -136,7 +141,10 @@ export function renderLayout(container, activePage) {
           </div>
           <button class="header__profile" id="profile-btn">
             <div class="header__avatar">${getInitials(user.name || 'U')}</div>
-            <span class="header__username">${user.name || 'User'}</span>
+            <div class="header__profile-info">
+              <span class="header__username">${user.name || 'User'}</span>
+              ${company.name ? `<span class="header__company-name">${company.name}</span>` : ''}
+            </div>
           </button>
         </div>
       </header>

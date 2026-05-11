@@ -12,6 +12,7 @@ const documentItemSchema = new mongoose.Schema({
 
 const documentSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   contact_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', default: null },
   transaction_type: { type: String, enum: ['sales', 'purchase'], required: true },
   document_type: { type: String, enum: ['order', 'invoice'], required: true },

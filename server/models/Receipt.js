@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const receiptSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   document_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Document', required: true },
   receipt_number: { type: String, required: true, unique: true },
   amount: { type: Number, required: true, default: 0 },

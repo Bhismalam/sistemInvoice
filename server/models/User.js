@@ -5,6 +5,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String, default: '' },
   password_hash: { type: String, required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  role_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null },
+  // Legacy business fields (kept for backward compatibility, will migrate to Company)
   business_name: { type: String, default: '' },
   business_logo: { type: String, default: null },
   business_address: { type: String, default: null },

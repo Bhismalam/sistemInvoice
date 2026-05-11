@@ -75,6 +75,7 @@ export function renderLogin(container) {
       });
       setTokens(res.data.accessToken, res.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(res.data.user));
+      if (res.data.company) localStorage.setItem('company', JSON.stringify(res.data.company));
       showToast('Login berhasil! Selamat datang 🎉', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
@@ -100,6 +101,7 @@ export function renderLogin(container) {
             });
             setTokens(res.data.accessToken, res.data.refreshToken);
             localStorage.setItem('user', JSON.stringify(res.data.user));
+            if (res.data.company) localStorage.setItem('company', JSON.stringify(res.data.company));
             showToast('Login Google berhasil! 🎉', 'success');
             window.location.hash = '#/dashboard';
           } catch (err) {

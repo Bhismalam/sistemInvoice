@@ -18,6 +18,7 @@ const paymentRoutes = require('./routes/payments');
 const contactRoutes = require('./routes/contacts');
 const productRoutes = require('./routes/products');
 const debtRoutes = require('./routes/debts');
+const companyRoutes = require('./routes/company');
 const { dashboardRouter, reportRouter, settingsRouter } = require('./routes/dashboard');
 const documentController = require('./controllers/documentController');
 
@@ -94,6 +95,7 @@ app.use('/api/dashboard', authenticate, dashboardRouter);
 app.use('/api/reports', authenticate, reportRouter);
 app.use('/api/settings', authenticate, settingsRouter);
 app.use('/api/notifications', authenticate, notificationRoutes);
+app.use('/api/company', companyRoutes); // Company routes handle their own auth internally
 
 // === BACKGROUND SCHEDULER === (skip in test mode)
 if (process.env.NODE_ENV !== 'test') {

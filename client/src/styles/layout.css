@@ -60,6 +60,8 @@
 .header__profile:hover { background: var(--bg-tertiary); }
 .header__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; color: #fff; }
 .header__username { color: var(--text-primary); font-weight: 500; font-size: 0.875rem; }
+.header__profile-info { display: flex; flex-direction: column; align-items: flex-start; }
+.header__company-name { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Notification Dropdown */
 .notification-dropdown { position: absolute; top: calc(100% + 0.5rem); right: 0; width: 350px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 1000; display: none; flex-direction: column; overflow: hidden; cursor: default; }

@@ -24,6 +24,7 @@ import { renderContacts } from './pages/Contacts.js';
 import { renderProducts } from './pages/Products.js';
 import { renderReports } from './pages/Reports.js';
 import { renderSettings } from './pages/Settings.js';
+import { renderCompanySettings } from './pages/CompanySettings.js';
 
 // Initialize Router
 const router = new Router();
@@ -54,6 +55,7 @@ router
   .add('/contacts', renderContacts)
   .add('/products', renderProducts)
   .add('/reports', renderReports)
-  .add('/settings', renderSettings);
+  .add('/settings', renderSettings)
+  .add('/company', renderCompanySettings);
 
 router.start();

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const paymentReminderSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   document_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Document', required: true },
   reminder_date: { type: Date, required: true },
   reminder_type: { type: String, enum: ['before_due', 'on_due', 'after_due', 'custom'], default: 'before_due' },
