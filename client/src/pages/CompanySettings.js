@@ -2,20 +2,39 @@ import { api } from '../utils/api.js';
 import { showToast } from '../router.js';
 import { renderLayout } from '../components/Layout.js';
 
-export function renderCompanySettings(container) {
+export async function renderCompanySettings(container) {
   const page = renderLayout(container, 'company');
+
+  // Show loading while fetching user info
+  page.innerHTML = '<div class="loading-spinner"><span class="spinner"></span> Memuat...</div>';
+
+  // Fetch user info to determine permissions
+  let userInfo = { user: {}, company: null, role: null };
+  try {
+    const res = await api('/auth/me');
+    userInfo = res.data;
+  } catch (err) {
+    console.error('Failed to fetch user info:', err);
+  }
+
+  const { role, company } = userInfo;
+  const perms = role?.permissions || [];
+  const isOwner = role?.name === 'Owner';
+  const canManageMembers = isOwner || perms.includes('read:members');
+  const canManageRoles = isOwner || perms.includes('read:roles');
+  const canEditCompany = isOwner || perms.includes('update:company_settings');
 
   page.innerHTML = `
     <div class="settings-container" style="margin-top: 0;">
       <div class="settings-header-section">
         <h1 class="page-title">⚙️ Pengaturan</h1>
-        <p class="page-subtitle">Kelola akun, profil bisnis, tim, dan hak akses dalam satu tempat.</p>
+        <p class="page-subtitle">Kelola akun${canEditCompany ? ', profil bisnis' : ''}${canManageMembers ? ', tim' : ''}${canManageRoles ? ', dan hak akses' : ''} dalam satu tempat.</p>
         
         <div class="settings-nav" id="company-settings-tabs">
           <button class="settings-nav-item active" data-tab="account">👤 Profil Akun</button>
           <button class="settings-nav-item" data-tab="profile">🏢 Profil Bisnis</button>
-          <button class="settings-nav-item" data-tab="members">👥 Anggota Tim</button>
-          <button class="settings-nav-item" data-tab="roles">🔐 Hak Akses (Roles)</button>
+          ${canManageMembers ? '<button class="settings-nav-item" data-tab="members">👥 Anggota Tim</button>' : ''}
+          ${canManageRoles ? '<button class="settings-nav-item" data-tab="roles">🔐 Hak Akses (Roles)</button>' : ''}
         </div>
       </div>
 
@@ -24,6 +43,9 @@ export function renderCompanySettings(container) {
       </div>
     </div>
   `;
+
+  // Store permissions context on page element for use in tab renderers
+  page._permCtx = { isOwner, canManageMembers, canManageRoles, canEditCompany, userInfo };
 
   // Tab switching
   page.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(tab => {
@@ -192,62 +214,68 @@ async function renderAccountTab(content, page) {
 async function renderProfileTab(content, page) {
   const res = await api('/company');
   const c = res.data;
+  const ctx = page._permCtx || {};
+  const readOnly = !ctx.canEditCompany;
+  const ro = readOnly ? 'disabled style="opacity:0.6;cursor:not-allowed"' : '';
 
   content.innerHTML = `
     <form id="company-profile-form" class="settings-form card">
+      ${readOnly ? '<div style="padding:10px 14px;border-radius:var(--radius-md);background:rgba(99,102,241,0.08);color:var(--accent-primary);font-size:0.85rem;margin-bottom:var(--space-lg)">ℹ️ Anda hanya dapat melihat informasi perusahaan. Hubungi Owner untuk mengubah data.</div>' : ''}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Nama Perusahaan</label>
-          <input type="text" class="form-input" id="cp-name" value="${c.name || ''}" required /></div>
+          <input type="text" class="form-input" id="cp-name" value="${c.name || ''}" ${ro} required /></div>
         <div class="form-group"><label class="form-label">Email Perusahaan</label>
-          <input type="email" class="form-input" id="cp-email" value="${c.email || ''}" /></div>
+          <input type="email" class="form-input" id="cp-email" value="${c.email || ''}" ${ro} /></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Telepon</label>
-          <input type="text" class="form-input" id="cp-phone" value="${c.phone || ''}" /></div>
+          <input type="text" class="form-input" id="cp-phone" value="${c.phone || ''}" ${ro} /></div>
         <div class="form-group"><label class="form-label">NPWP</label>
-          <input type="text" class="form-input" id="cp-npwp" value="${c.npwp || ''}" /></div>
+          <input type="text" class="form-input" id="cp-npwp" value="${c.npwp || ''}" ${ro} /></div>
       </div>
       <div class="form-group"><label class="form-label">Alamat</label>
-        <textarea class="form-input" id="cp-address" rows="2">${c.address || ''}</textarea></div>
+        <textarea class="form-input" id="cp-address" rows="2" ${ro}>${c.address || ''}</textarea></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Nama Bank</label>
-          <input type="text" class="form-input" id="cp-bank" value="${c.bank_name || ''}" /></div>
+          <input type="text" class="form-input" id="cp-bank" value="${c.bank_name || ''}" ${ro} /></div>
         <div class="form-group"><label class="form-label">No. Rekening</label>
-          <input type="text" class="form-input" id="cp-bank-number" value="${c.bank_account_number || ''}" /></div>
+          <input type="text" class="form-input" id="cp-bank-number" value="${c.bank_account_number || ''}" ${ro} /></div>
         <div class="form-group"><label class="form-label">Atas Nama</label>
-          <input type="text" class="form-input" id="cp-bank-name" value="${c.bank_account_name || ''}" /></div>
+          <input type="text" class="form-input" id="cp-bank-name" value="${c.bank_account_name || ''}" ${ro} /></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Prefix Invoice</label>
-          <input type="text" class="form-input" id="cp-prefix" value="${c.invoice_prefix || 'INV'}" /></div>
+          <input type="text" class="form-input" id="cp-prefix" value="${c.invoice_prefix || 'INV'}" ${ro} /></div>
         <div class="form-group"><label class="form-label">Pajak Default (%)</label>
-          <input type="number" class="form-input" id="cp-tax" value="${c.default_tax_percent || 11}" /></div>
+          <input type="number" class="form-input" id="cp-tax" value="${c.default_tax_percent || 11}" ${ro} /></div>
       </div>
-      <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+      ${!readOnly ? '<button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>' : ''}
     </form>
   `;
 
-  page.querySelector('#company-profile-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await api('/company', {
-        method: 'PUT',
-        body: {
-          name: page.querySelector('#cp-name').value,
-          email: page.querySelector('#cp-email').value,
-          phone: page.querySelector('#cp-phone').value,
-          npwp: page.querySelector('#cp-npwp').value,
-          address: page.querySelector('#cp-address').value,
-          bank_name: page.querySelector('#cp-bank').value,
-          bank_account_number: page.querySelector('#cp-bank-number').value,
-          bank_account_name: page.querySelector('#cp-bank-name').value,
-          invoice_prefix: page.querySelector('#cp-prefix').value,
-          default_tax_percent: parseFloat(page.querySelector('#cp-tax').value)
-        }
-      });
-      showToast('Pengaturan perusahaan berhasil disimpan!', 'success');
-    } catch (err) { showToast(err.message, 'error'); }
-  });
+  if (!readOnly) {
+    page.querySelector('#company-profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('/company', {
+          method: 'PUT',
+          body: {
+            name: page.querySelector('#cp-name').value,
+            email: page.querySelector('#cp-email').value,
+            phone: page.querySelector('#cp-phone').value,
+            npwp: page.querySelector('#cp-npwp').value,
+            address: page.querySelector('#cp-address').value,
+            bank_name: page.querySelector('#cp-bank').value,
+            bank_account_number: page.querySelector('#cp-bank-number').value,
+            bank_account_name: page.querySelector('#cp-bank-name').value,
+            invoice_prefix: page.querySelector('#cp-prefix').value,
+            default_tax_percent: parseFloat(page.querySelector('#cp-tax').value)
+          }
+        });
+        showToast('Pengaturan perusahaan berhasil disimpan!', 'success');
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
 }
 
 // === MEMBERS TAB ===
