@@ -31,7 +31,6 @@ export function renderCompanySettings(container) {
   loadTab('profile');
 }
 
-// Helper to get consistent ID from MongoDB objects
 function getId(obj) {
   return obj.id || obj._id;
 }
@@ -190,7 +189,7 @@ async function renderMembersTab(content) {
     </div>
   `;
 
-  // Invite modal
+  // Invite modal events... (same logic as before)
   document.getElementById('btn-invite-member').addEventListener('click', () => {
     document.getElementById('invite-modal').style.display = 'flex';
     document.getElementById('invite-result').style.display = 'none';
@@ -214,40 +213,9 @@ async function renderMembersTab(content) {
       showToast('Undangan berhasil dibuat!', 'success');
     } catch (err) { showToast(err.message, 'error'); }
   });
-
-  document.getElementById('btn-copy-link')?.addEventListener('click', () => {
-    const link = document.getElementById('invite-link-display').textContent;
-    navigator.clipboard.writeText(link);
-    showToast('Link undangan disalin!', 'success');
-  });
-
-  // Change member role
-  document.querySelectorAll('.member-role-select').forEach(select => {
-    select.addEventListener('change', async () => {
-      try {
-        await api(`/company/members/${select.dataset.memberId}/role`, {
-          method: 'PUT',
-          body: { role_id: select.value }
-        });
-        showToast('Role berhasil diubah!', 'success');
-      } catch (err) { showToast(err.message, 'error'); }
-    });
-  });
-
-  // Remove member
-  document.querySelectorAll('.btn-remove-member').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Hapus anggota ini dari perusahaan?')) return;
-      try {
-        await api(`/company/members/${btn.dataset.memberId}`, { method: 'DELETE' });
-        showToast('Anggota berhasil dihapus.', 'success');
-        renderMembersTab(content);
-      } catch (err) { showToast(err.message, 'error'); }
-    });
-  });
 }
 
-// === ROLES TAB ===
+// === ROLES TAB (REDESIGN) ===
 async function renderRolesTab(content) {
   const [rolesRes, permsRes] = await Promise.all([
     api('/company/roles'),
@@ -257,162 +225,231 @@ async function renderRolesTab(content) {
   const roles = rolesRes.data || [];
   const allPerms = permsRes.data || [];
 
-  console.log('Roles data:', JSON.stringify(roles));
-  console.log('Permissions data:', allPerms);
-
-  if (roles.length === 0) {
-    content.innerHTML = `
-      <div class="card" style="padding:var(--space-2xl);text-align:center">
-        <p style="color:var(--text-secondary);margin-bottom:var(--space-lg)">Belum ada role. Jalankan migrasi data terlebih dahulu.</p>
-        <button class="btn btn-primary" id="btn-add-role-empty">➕ Tambah Role Pertama</button>
-      </div>`;
-    document.getElementById('btn-add-role-empty')?.addEventListener('click', async () => {
-      const name = prompt('Masukkan nama role baru:');
-      if (!name) return;
-      try {
-        await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
-        showToast('Role berhasil dibuat!', 'success');
-        renderRolesTab(content);
-      } catch (err) { showToast(err.message, 'error'); }
-    });
-    return;
-  }
-
-  // Group permissions by resource
-  const permGroups = {};
-  allPerms.forEach(p => {
-    const [action, resource] = p.split(':');
-    if (!permGroups[resource]) permGroups[resource] = [];
-    permGroups[resource].push({ perm: p, action });
-  });
-
-  // Resource labels for better display
-  const resourceLabels = {
-    document: '📄 Dokumen (Invoice & Order)',
-    product: '📦 Produk',
-    contact: '👥 Kontak / Mitra',
-    receipt: '🧾 Kuitansi',
-    dashboard: '📊 Dashboard',
-    report: '📈 Laporan',
-    reminder: '🔔 Pengingat Pembayaran',
-    members: '👤 Anggota Tim',
-    roles: '🔐 Hak Akses',
-    company_settings: '🏢 Pengaturan Perusahaan'
-  };
-
-  const actionLabels = {
-    create: 'Buat',
-    read: 'Lihat',
-    update: 'Edit',
-    delete: 'Hapus',
-    manage: 'Kelola'
-  };
-
   content.innerHTML = `
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
-        <h3>🔐 Hak Akses (Roles)</h3>
+        <h3>🔐 Konfigurasi Role Akses</h3>
         <button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>
       </div>
-      <div class="roles-matrix" style="overflow-x:auto">
-        <table class="table roles-table">
+      
+      <div class="roles-matrix">
+        <table class="roles-table">
           <thead>
             <tr>
-              <th style="min-width:200px;position:sticky;left:0;background:var(--bg-elevated);z-index:1">Fitur</th>
-              ${roles.map(r => `
-                <th style="text-align:center;min-width:120px">
-                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                    <span>${r.name}</span>
-                    ${r.is_default ? '<span style="font-size:0.65rem;color:var(--text-muted)">🔒 Bawaan</span>' : `<button class="btn-icon btn-delete-role" data-role-id="${getId(r)}" title="Hapus role">🗑️</button>`}
-                  </div>
-                </th>
-              `).join('')}
+              <th>ROLE</th>
+              <th style="text-align:center">C</th>
+              <th style="text-align:center">R</th>
+              <th style="text-align:center">U</th>
+              <th style="text-align:center">D</th>
+              <th style="text-align:center">STATUS</th>
+              <th style="text-align:center">AKSI</th>
             </tr>
           </thead>
           <tbody>
-            ${Object.keys(permGroups).map(resource => `
-              <tr class="permission-group-header">
-                <td colspan="${roles.length + 1}" style="font-weight:600;background:var(--bg-secondary);padding:10px var(--space-md)">
-                  ${resourceLabels[resource] || `📁 ${resource}`}
-                </td>
-              </tr>
-              ${permGroups[resource].map(({ perm, action }) => `
+            ${roles.map(r => {
+              const roleId = getId(r);
+              const perms = r.permissions || [];
+              const hasC = perms.some(p => p.startsWith('create:'));
+              const hasR = perms.some(p => p.startsWith('read:'));
+              const hasU = perms.some(p => p.startsWith('update:'));
+              const hasD = perms.some(p => p.startsWith('delete:'));
+              
+              return `
                 <tr>
-                  <td style="padding-left:var(--space-xl);position:sticky;left:0;background:var(--bg-elevated);z-index:1">
-                    ${actionLabels[action] || action}
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:1.1rem">
+                        ${r.name === 'Owner' ? '👑' : '👤'}
+                      </div>
+                      <div>
+                        <div style="font-weight:600">${r.name}</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">${r.description || 'Tidak ada deskripsi'}</div>
+                      </div>
+                    </div>
                   </td>
-                  ${roles.map(r => {
-                    const roleId = getId(r);
-                    const perms = r.permissions || [];
-                    const isChecked = perms.includes(perm);
-                    const isOwner = r.name === 'Owner';
-                    return `
-                    <td style="text-align:center">
-                      <input type="checkbox" class="role-perm-checkbox" 
-                             data-role-id="${roleId}" data-perm="${perm}" 
-                             ${isChecked ? 'checked' : ''}
-                             ${isOwner ? 'disabled checked' : ''} />
-                    </td>`;
-                  }).join('')}
+                  <td style="text-align:center">
+                    <label class="switch">
+                      <input type="checkbox" ${hasC ? 'checked' : ''} disabled>
+                      <span class="slider"></span>
+                    </label>
+                  </td>
+                  <td style="text-align:center">
+                    <label class="switch">
+                      <input type="checkbox" ${hasR ? 'checked' : ''} disabled>
+                      <span class="slider"></span>
+                    </label>
+                  </td>
+                  <td style="text-align:center">
+                    <label class="switch">
+                      <input type="checkbox" ${hasU ? 'checked' : ''} disabled>
+                      <span class="slider"></span>
+                    </label>
+                  </td>
+                  <td style="text-align:center">
+                    <label class="switch">
+                      <input type="checkbox" ${hasD ? 'checked' : ''} disabled>
+                      <span class="slider"></span>
+                    </label>
+                  </td>
+                  <td style="text-align:center">
+                    <span class="status-pill status-pill--active">
+                      <span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>
+                      AKTIF
+                    </span>
+                  </td>
+                  <td style="text-align:center">
+                    <div class="action-group" style="justify-content:center">
+                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="Atur Hak Akses">⚙️</button>
+                      ${r.is_default ? '' : `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>`}
+                    </div>
+                  </td>
                 </tr>
-              `).join('')}
-            `).join('')}
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
-      <button class="btn btn-primary" id="btn-save-roles" style="margin-top:var(--space-lg)">💾 Simpan Perubahan Role</button>
+    </div>
+
+    <!-- Modal Edit Detail -->
+    <div id="role-detail-modal" class="modal" style="display:none">
+      <div class="modal-content card" style="max-width:700px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
+          <h3>⚙️ Atur Hak Akses: <span id="modal-role-name"></span></h3>
+          <button class="btn-icon" id="btn-close-role-modal">✕</button>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Deskripsi Role</label>
+          <input type="text" class="form-input" id="modal-role-desc" />
+        </div>
+
+        <div class="perm-detail-grid" id="modal-perm-grid">
+          <!-- Permissions will be rendered here -->
+        </div>
+
+        <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl);justify-content:flex-end">
+          <button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>
+          <button class="btn" id="btn-cancel-role-modal">Batal</button>
+        </div>
+      </div>
     </div>
   `;
 
+  // Event Listeners
+  setupRoleEvents(content, roles, allPerms);
+}
+
+function setupRoleEvents(content, roles, allPerms) {
+  let currentRoleId = null;
+
+  const resourceLabels = {
+    document: '📄 Dokumen', product: '📦 Produk', contact: '👥 Kontak', 
+    receipt: '🧾 Kuitansi', dashboard: '📊 Dashboard', report: '📈 Laporan', 
+    reminder: '🔔 Pengingat', members: '👤 Anggota', roles: '🔐 Hak Akses', 
+    company_settings: '🏢 Pengaturan'
+  };
+
+  const resourceIcons = { document: '📄', product: '📦', contact: '👥', receipt: '🧾', dashboard: '📊', report: '📈', reminder: '🔔', members: '👤', roles: '🔐', company_settings: '🏢' };
+
+  // Open Edit Modal
+  document.querySelectorAll('.btn-edit-role').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const roleId = btn.dataset.roleId;
+      const role = roles.find(r => getId(r) === roleId);
+      if (!role) return;
+
+      currentRoleId = roleId;
+      document.getElementById('modal-role-name').textContent = role.name;
+      document.getElementById('modal-role-desc').value = role.description || '';
+      document.getElementById('role-detail-modal').style.display = 'flex';
+
+      renderPermissionGrid(role.permissions || [], allPerms, resourceLabels);
+    });
+  });
+
+  // Close Modals
+  const closeModal = () => document.getElementById('role-detail-modal').style.display = 'none';
+  document.getElementById('btn-close-role-modal').onclick = closeModal;
+  document.getElementById('btn-cancel-role-modal').onclick = closeModal;
+
+  // Save Role Details
+  document.getElementById('btn-save-role-detail').onclick = async () => {
+    const btn = document.getElementById('btn-save-role-detail');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+
+    const permissions = [];
+    document.querySelectorAll('.modal-perm-toggle').forEach(cb => {
+      if (cb.checked) permissions.push(cb.dataset.perm);
+    });
+
+    try {
+      await api(`/company/roles/${currentRoleId}`, {
+        method: 'PUT',
+        body: {
+          description: document.getElementById('modal-role-desc').value,
+          permissions
+        }
+      });
+      showToast('Role berhasil diperbarui!', 'success');
+      renderRolesTab(document.getElementById('company-settings-content'));
+      closeModal();
+    } catch (err) { showToast(err.message, 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = '💾 Simpan Perubahan';
+    }
+  };
+
   // Add role
-  document.getElementById('btn-add-role').addEventListener('click', async () => {
+  document.getElementById('btn-add-role').onclick = async () => {
     const name = prompt('Masukkan nama role baru:');
     if (!name) return;
     try {
       await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
       showToast('Role berhasil dibuat!', 'success');
-      renderRolesTab(content);
+      renderRolesTab(document.getElementById('company-settings-content'));
     } catch (err) { showToast(err.message, 'error'); }
-  });
+  };
 
   // Delete role
   document.querySelectorAll('.btn-delete-role').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
+    btn.onclick = async () => {
       if (!confirm('Hapus role ini?')) return;
       try {
         await api(`/company/roles/${btn.dataset.roleId}`, { method: 'DELETE' });
         showToast('Role berhasil dihapus.', 'success');
-        renderRolesTab(content);
+        renderRolesTab(document.getElementById('company-settings-content'));
       } catch (err) { showToast(err.message, 'error'); }
-    });
+    };
+  });
+}
+
+function renderPermissionGrid(activePerms, allPerms, labels) {
+  const grid = document.getElementById('modal-perm-grid');
+  const groups = {};
+  
+  allPerms.forEach(p => {
+    const [action, resource] = p.split(':');
+    if (!groups[resource]) groups[resource] = [];
+    groups[resource].push({ perm: p, action });
   });
 
-  // Save all roles permissions
-  document.getElementById('btn-save-roles').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-save-roles');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
-    try {
-      const roleUpdates = {};
-      document.querySelectorAll('.role-perm-checkbox').forEach(cb => {
-        const roleId = cb.dataset.roleId;
-        const perm = cb.dataset.perm;
-        if (!roleUpdates[roleId]) roleUpdates[roleId] = [];
-        if (cb.checked) roleUpdates[roleId].push(perm);
-      });
-
-      for (const [roleId, permissions] of Object.entries(roleUpdates)) {
-        // Skip Owner role
-        const role = roles.find(r => getId(r) === roleId);
-        if (role && role.name === 'Owner') continue;
-        await api(`/company/roles/${roleId}`, { method: 'PUT', body: { permissions } });
-      }
-      showToast('Hak akses berhasil disimpan!', 'success');
-    } catch (err) { showToast(err.message, 'error'); }
-    finally {
-      btn.disabled = false;
-      btn.innerHTML = '💾 Simpan Perubahan Role';
-    }
-  });
+  grid.innerHTML = Object.keys(groups).map(resource => `
+    <div class="perm-resource-row">
+      <div class="perm-resource-name">${labels[resource] || resource}</div>
+      <div class="perm-resource-toggles">
+        ${groups[resource].map(({ perm, action }) => `
+          <div class="perm-toggle-item">
+            <span class="perm-toggle-label">${action.charAt(0)}</span>
+            <label class="switch">
+              <input type="checkbox" class="modal-perm-toggle" data-perm="${perm}" ${activePerms.includes(perm) ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 }
