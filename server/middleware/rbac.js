@@ -20,6 +20,11 @@ function checkPermission(...requiredPermissions) {
         });
       }
 
+      // Owner always has full access regardless of permission array
+      if (role.name === 'Owner') {
+        return next();
+      }
+
       // Check if the role has ALL required permissions
       const hasPermission = requiredPermissions.every(perm => role.permissions.includes(perm));
       if (!hasPermission) {

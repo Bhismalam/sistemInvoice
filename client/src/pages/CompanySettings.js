@@ -20,9 +20,9 @@ export async function renderCompanySettings(container) {
   const { role, company } = userInfo;
   const perms = role?.permissions || [];
   const isOwner = role?.name === 'Owner';
-  const canManageMembers = isOwner || perms.includes('manage:members');
-  const canManageRoles = isOwner || perms.includes('manage:roles');
-  const canEditCompany = isOwner; // Force only Owner to edit company profile per user request
+  const canManageMembers = isOwner || perms.includes('read:members');
+  const canManageRoles = isOwner || perms.includes('read:roles');
+  const canEditCompany = isOwner;
 
   page.innerHTML = `
     <div class="settings-container" style="margin-top: 0;">
@@ -295,7 +295,7 @@ async function renderMembersTab(content, page) {
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
         <h3>👥 Anggota Tim (${members.length})</h3>
-        ${isOwner || perms.includes('manage:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>' : ''}
+        ${isOwner || perms.includes('create:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>' : ''}
       </div>
       <div style="overflow-x:auto">
         <table class="table">
@@ -304,7 +304,7 @@ async function renderMembersTab(content, page) {
             ${members.map(m => {
               const memberId = getId(m);
               const memberRoleId = m.role_id ? (typeof m.role_id === 'object' ? getId(m.role_id) : m.role_id) : '';
-              const canEditThisMember = (isOwner || perms.includes('manage:members')) && !m.is_owner;
+              const canEditThisMember = (isOwner || perms.includes('update:members')) && !m.is_owner;
               return `
               <tr>
                 <td><strong>${m.name}</strong> ${m.is_owner ? '<span class="badge badge-success">Owner</span>' : ''}</td>
@@ -414,7 +414,7 @@ async function renderRolesTab(content, page) {
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
         <h3>🔐 Konfigurasi Role Akses</h3>
-        ${isOwner || perms.includes('manage:roles') ? '<button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>' : ''}
+        ${isOwner || perms.includes('create:roles') ? '<button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>' : ''}
       </div>
       
       <div class="roles-matrix">
@@ -484,8 +484,8 @@ async function renderRolesTab(content, page) {
                   </td>
                   <td style="text-align:center">
                     <div class="action-group" style="justify-content:center">
-                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="${isOwner || perms.includes('manage:roles') ? 'Atur Hak Akses' : 'Lihat Detail'}">⚙️</button>
-                      ${(!r.is_default && (isOwner || perms.includes('manage:roles'))) ? `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>` : ''}
+                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="${isOwner || perms.includes('update:roles') ? 'Atur Hak Akses' : 'Lihat Detail'}">⚙️</button>
+                      ${(!r.is_default && (isOwner || perms.includes('delete:roles'))) ? `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>` : ''}
                     </div>
                   </td>
                 </tr>
@@ -514,8 +514,8 @@ async function renderRolesTab(content, page) {
         </div>
 
         <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl);justify-content:flex-end">
-          ${isOwner || perms.includes('manage:roles') ? '<button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>' : ''}
-          <button class="btn" id="btn-cancel-role-modal">${isOwner || perms.includes('manage:roles') ? 'Batal' : 'Tutup'}</button>
+          ${isOwner || perms.includes('update:roles') ? '<button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>' : ''}
+          <button class="btn" id="btn-cancel-role-modal">${isOwner || perms.includes('update:roles') ? 'Batal' : 'Tutup'}</button>
         </div>
       </div>
     </div>
@@ -619,25 +619,37 @@ function renderPermissionGrid(page, activePerms, allPerms, labels) {
   const grid = page.querySelector('#modal-perm-grid');
   const groups = {};
   
+  // Sort and group permissions
+  const actionOrder = { 'create': 1, 'read': 2, 'update': 3, 'delete': 4, 'manage': 5 };
+  
   allPerms.forEach(p => {
     const [action, resource] = p.split(':');
     if (!groups[resource]) groups[resource] = [];
     groups[resource].push({ perm: p, action });
   });
 
+  // Sort actions within each resource group
+  Object.keys(groups).forEach(res => {
+    groups[res].sort((a, b) => (actionOrder[a.action] || 99) - (actionOrder[b.action] || 99));
+  });
+
   grid.innerHTML = Object.keys(groups).map(resource => `
     <div class="perm-resource-row">
       <div class="perm-resource-name">${labels[resource] || resource}</div>
       <div class="perm-resource-toggles">
-        ${groups[resource].map(({ perm, action }) => `
-          <div class="perm-toggle-item">
-            <span class="perm-toggle-label">${action.charAt(0)}</span>
-            <label class="switch">
-              <input type="checkbox" class="modal-perm-toggle" data-perm="${perm}" ${activePerms.includes(perm) ? 'checked' : ''}>
-              <span class="slider"></span>
-            </label>
-          </div>
-        `).join('')}
+        ${groups[resource].map(({ perm, action }) => {
+          const char = action === 'manage' ? 'M' : action.charAt(0).toUpperCase();
+          const color = { create: '#10b981', read: '#3b82f6', update: '#f59e0b', delete: '#ef4444' }[action] || 'var(--text-muted)';
+          return `
+            <div class="perm-toggle-item" title="${action.toUpperCase()}">
+              <span class="perm-toggle-label" style="color:${color}">${char}</span>
+              <label class="switch">
+                <input type="checkbox" class="modal-perm-toggle" data-perm="${perm}" ${activePerms.includes(perm) ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+          `;
+        }).join('')}
       </div>
     </div>
   `).join('');

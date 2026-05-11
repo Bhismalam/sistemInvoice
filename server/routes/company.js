@@ -9,23 +9,23 @@ router.use(authenticate);
 
 // === Company Profile ===
 router.get('/', companyController.getCompany);
-router.put('/', checkPermission('manage:company_settings'), companyController.updateCompany);
+router.put('/', checkPermission('update:company_settings'), companyController.updateCompany);
 
 // === Members ===
 router.get('/members', companyController.getMembers);
-router.put('/members/:memberId/role', checkPermission('manage:members'), companyController.updateMemberRole);
-router.delete('/members/:memberId', checkPermission('manage:members'), companyController.removeMember);
+router.put('/members/:memberId/role', checkPermission('update:members'), companyController.updateMemberRole);
+router.delete('/members/:memberId', checkPermission('delete:members'), companyController.removeMember);
 
 // === Roles (RBAC) ===
 router.get('/roles', companyController.getRoles);
 router.get('/permissions', companyController.getPermissions);
-router.post('/roles', checkPermission('manage:roles'), companyController.createRole);
-router.put('/roles/:roleId', checkPermission('manage:roles'), companyController.updateRole);
-router.delete('/roles/:roleId', checkPermission('manage:roles'), companyController.deleteRole);
+router.post('/roles', checkPermission('create:roles'), companyController.createRole);
+router.put('/roles/:roleId', checkPermission('update:roles'), companyController.updateRole);
+router.delete('/roles/:roleId', checkPermission('delete:roles'), companyController.deleteRole);
 
 // === Invitations ===
-router.get('/invitations', checkPermission('manage:members'), companyController.getInvitations);
-router.post('/invitations', checkPermission('manage:members'), companyController.createInvitation);
-router.delete('/invitations/:invitationId', checkPermission('manage:members'), companyController.revokeInvitation);
+router.get('/invitations', checkPermission('read:members'), companyController.getInvitations);
+router.post('/invitations', checkPermission('create:members'), companyController.createInvitation);
+router.delete('/invitations/:invitationId', checkPermission('delete:members'), companyController.revokeInvitation);
 
 module.exports = router;

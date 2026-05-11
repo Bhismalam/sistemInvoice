@@ -9,13 +9,19 @@ const ALL_PERMISSIONS = [
   // Contacts
   'create:contact', 'read:contact', 'update:contact', 'delete:contact',
   // Receipts
-  'create:receipt', 'read:receipt', 'delete:receipt',
-  // Reports & Dashboard
-  'read:dashboard', 'read:report',
+  'create:receipt', 'read:receipt', 'update:receipt', 'delete:receipt',
+  // Dashboard
+  'create:dashboard', 'read:dashboard', 'update:dashboard', 'delete:dashboard',
+  // Reports
+  'create:report', 'read:report', 'update:report', 'delete:report',
   // Payment Reminders
   'create:reminder', 'read:reminder', 'update:reminder', 'delete:reminder',
-  // Company Management (Admin-only typically)
-  'manage:members', 'manage:roles', 'manage:company_settings'
+  // Members Management
+  'create:members', 'read:members', 'update:members', 'delete:members',
+  // Roles Management
+  'create:roles', 'read:roles', 'update:roles', 'delete:roles',
+  // Company Settings
+  'create:company_settings', 'read:company_settings', 'update:company_settings', 'delete:company_settings'
 ];
 
 const roleSchema = new mongoose.Schema({
@@ -90,6 +96,7 @@ const RoleModel = {
         'create:contact', 'read:contact', 'update:contact',
         'create:receipt', 'read:receipt',
         'read:dashboard',
+        'read:report',
         'read:reminder'
       ],
       is_default: true
