@@ -287,6 +287,9 @@ async function renderMembersTab(content, page) {
 
   const members = membersRes.data;
   const roles = rolesRes.data;
+  const ctx = page._permCtx || {};
+  const perms = ctx.userInfo?.role?.permissions || [];
+  const isOwner = ctx.isOwner;
 
   content.innerHTML = `
     <div class="card">
@@ -403,6 +406,9 @@ async function renderRolesTab(content, page) {
 
   const roles = rolesRes.data || [];
   const allPerms = permsRes.data || [];
+  const ctx = page._permCtx || {};
+  const perms = ctx.userInfo?.role?.permissions || [];
+  const isOwner = ctx.isOwner;
 
   content.innerHTML = `
     <div class="card">
@@ -520,6 +526,9 @@ async function renderRolesTab(content, page) {
 
 function setupRoleEvents(page, roles, allPerms) {
   let currentRoleId = null;
+  const ctx = page._permCtx || {};
+  const perms = ctx.userInfo?.role?.permissions || [];
+  const isOwner = ctx.isOwner;
 
   const resourceLabels = {
     document: '📄 Dokumen', product: '📦 Produk', contact: '👥 Kontak', 
