@@ -3,26 +3,28 @@ import { showToast } from '../router.js';
 
 export function renderCompanySettings(container) {
   container.innerHTML = `
-    <div class="page-header">
-      <h1 class="page-title">⚙️ Pengaturan Perusahaan</h1>
-    </div>
+    <div class="settings-container">
+      <div class="settings-header-section">
+        <h1 class="page-title">⚙️ Pengaturan Perusahaan</h1>
+        <p class="page-subtitle">Kelola profil bisnis, tim, dan hak akses dalam satu tempat.</p>
+        
+        <div class="settings-nav" id="company-settings-tabs">
+          <button class="settings-nav-item active" data-tab="profile">🏢 Profil Bisnis</button>
+          <button class="settings-nav-item" data-tab="members">👥 Anggota Tim</button>
+          <button class="settings-nav-item" data-tab="roles">🔐 Hak Akses (Roles)</button>
+        </div>
+      </div>
 
-    <!-- Tabs -->
-    <div class="settings-tabs" id="company-settings-tabs">
-      <button class="settings-tab active" data-tab="profile">🏢 Profil Bisnis</button>
-      <button class="settings-tab" data-tab="members">👥 Anggota Tim</button>
-      <button class="settings-tab" data-tab="roles">🔐 Hak Akses (Roles)</button>
-    </div>
-
-    <div id="company-settings-content" class="settings-content">
-      <div class="loading-spinner"><span class="spinner"></span> Memuat...</div>
+      <div id="company-settings-content" class="settings-main-content">
+        <div class="loading-spinner"><span class="spinner"></span> Memuat...</div>
+      </div>
     </div>
   `;
 
   // Tab switching
-  document.querySelectorAll('#company-settings-tabs .settings-tab').forEach(tab => {
+  document.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('#company-settings-tabs .settings-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       loadTab(tab.dataset.tab);
     });
