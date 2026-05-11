@@ -69,11 +69,16 @@
 .modal-content { width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: var(--space-xl); }
 
 /* Roles Matrix */
-.roles-matrix table th, .roles-matrix table td { white-space: nowrap; }
+.roles-matrix { border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+.roles-table { border-collapse: collapse; width: 100%; }
+.roles-table th, .roles-table td { white-space: nowrap; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.roles-table thead th { background: var(--bg-tertiary); font-size: 0.85rem; font-weight: 600; border-bottom: 2px solid var(--border-color); }
+.roles-table tbody tr:hover { background: rgba(255,255,255,0.02); }
 .roles-matrix input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-primary); cursor: pointer; }
-.permission-group-header td { font-size: 0.85rem !important; }
-.btn-icon { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 2px 4px; opacity: 0.6; }
-.btn-icon:hover { opacity: 1; }
+.roles-matrix input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
+.permission-group-header td { font-size: 0.85rem !important; border-bottom: 1px solid var(--border-color) !important; }
+.btn-icon { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 2px 4px; opacity: 0.6; transition: opacity var(--transition-fast); }
+.btn-icon:hover { opacity: 1; color: var(--danger); }
 
 /* Badge */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
