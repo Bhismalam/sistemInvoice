@@ -16,7 +16,7 @@ export function renderLayout(container, activePage) {
       </div>
       <nav class="sidebar__nav">
         <div class="sidebar__section-label">Menu</div>
-          <a href="#/dashboard" class="nav-item ${currentPath === '/dashboard' ? 'active' : ''}">
+          <a href="#/dashboard" class="nav-item ${currentPath === '#/dashboard' ? 'active' : ''}">
             <span class="nav-item__icon">📊</span>
             <span class="nav-item__text">Dashboard</span>
           </a>

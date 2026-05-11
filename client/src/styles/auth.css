@@ -374,7 +374,7 @@
     gap: var(--space-xl);
     width: 100%;
     max-width: 1200px;
-    margin: 100px auto var(--space-xl) auto;
+    margin: 0 auto var(--space-xl) auto;
     padding: 0 var(--space-md);
 }
 

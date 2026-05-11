@@ -1,9 +1,12 @@
 import { api } from '../utils/api.js';
 import { showToast } from '../router.js';
+import { renderLayout } from '../components/Layout.js';
 
 export function renderCompanySettings(container) {
-  container.innerHTML = `
-    <div class="settings-container">
+  const page = renderLayout(container, 'company');
+
+  page.innerHTML = `
+    <div class="settings-container" style="margin-top: 0;">
       <div class="settings-header-section">
         <h1 class="page-title">⚙️ Pengaturan Perusahaan</h1>
         <p class="page-subtitle">Kelola profil bisnis, tim, dan hak akses dalam satu tempat.</p>
@@ -22,29 +25,30 @@ export function renderCompanySettings(container) {
   `;
 
   // Tab switching
-  document.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(tab => {
+  page.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(t => t.classList.remove('active'));
+      page.querySelectorAll('#company-settings-tabs .settings-nav-item').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      loadTab(tab.dataset.tab);
+      loadTab(tab.dataset.tab, page);
     });
   });
 
-  loadTab('profile');
+  loadTab('profile', page);
 }
 
 function getId(obj) {
-  return obj.id || obj._id;
+  if (!obj) return '';
+  return obj.id || obj._id || obj;
 }
 
-async function loadTab(tab) {
-  const content = document.getElementById('company-settings-content');
+async function loadTab(tab, page) {
+  const content = page.querySelector('#company-settings-content');
   content.innerHTML = '<div class="loading-spinner"><span class="spinner"></span> Memuat...</div>';
 
   try {
-    if (tab === 'profile') await renderProfileTab(content);
-    else if (tab === 'members') await renderMembersTab(content);
-    else if (tab === 'roles') await renderRolesTab(content);
+    if (tab === 'profile') await renderProfileTab(content, page);
+    else if (tab === 'members') await renderMembersTab(content, page);
+    else if (tab === 'roles') await renderRolesTab(content, page);
   } catch (err) {
     console.error('Tab load error:', err);
     const isNotFound = err.message && err.message.includes('tidak ditemukan');
@@ -64,7 +68,7 @@ async function loadTab(tab) {
 }
 
 // === PROFILE TAB ===
-async function renderProfileTab(content) {
+async function renderProfileTab(content, page) {
   const res = await api('/company');
   const c = res.data;
 
@@ -102,22 +106,22 @@ async function renderProfileTab(content) {
     </form>
   `;
 
-  document.getElementById('company-profile-form').addEventListener('submit', async (e) => {
+  page.querySelector('#company-profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
       await api('/company', {
         method: 'PUT',
         body: {
-          name: document.getElementById('cp-name').value,
-          email: document.getElementById('cp-email').value,
-          phone: document.getElementById('cp-phone').value,
-          npwp: document.getElementById('cp-npwp').value,
-          address: document.getElementById('cp-address').value,
-          bank_name: document.getElementById('cp-bank').value,
-          bank_account_number: document.getElementById('cp-bank-number').value,
-          bank_account_name: document.getElementById('cp-bank-name').value,
-          invoice_prefix: document.getElementById('cp-prefix').value,
-          default_tax_percent: parseFloat(document.getElementById('cp-tax').value)
+          name: page.querySelector('#cp-name').value,
+          email: page.querySelector('#cp-email').value,
+          phone: page.querySelector('#cp-phone').value,
+          npwp: page.querySelector('#cp-npwp').value,
+          address: page.querySelector('#cp-address').value,
+          bank_name: page.querySelector('#cp-bank').value,
+          bank_account_number: page.querySelector('#cp-bank-number').value,
+          bank_account_name: page.querySelector('#cp-bank-name').value,
+          invoice_prefix: page.querySelector('#cp-prefix').value,
+          default_tax_percent: parseFloat(page.querySelector('#cp-tax').value)
         }
       });
       showToast('Pengaturan perusahaan berhasil disimpan!', 'success');
@@ -126,7 +130,7 @@ async function renderProfileTab(content) {
 }
 
 // === MEMBERS TAB ===
-async function renderMembersTab(content) {
+async function renderMembersTab(content, page) {
   const [membersRes, rolesRes] = await Promise.all([
     api('/company/members'),
     api('/company/roles')
@@ -191,34 +195,55 @@ async function renderMembersTab(content) {
     </div>
   `;
 
-  // Invite modal events... (same logic as before)
-  document.getElementById('btn-invite-member').addEventListener('click', () => {
-    document.getElementById('invite-modal').style.display = 'flex';
-    document.getElementById('invite-result').style.display = 'none';
+  // Invite modal events
+  page.querySelector('#btn-invite-member').addEventListener('click', () => {
+    page.querySelector('#invite-modal').style.display = 'flex';
+    page.querySelector('#invite-result').style.display = 'none';
   });
-  document.getElementById('btn-close-invite').addEventListener('click', () => {
-    document.getElementById('invite-modal').style.display = 'none';
+  page.querySelector('#btn-close-invite').addEventListener('click', () => {
+    page.querySelector('#invite-modal').style.display = 'none';
   });
 
-  document.getElementById('btn-send-invite').addEventListener('click', async () => {
+  page.querySelector('#btn-send-invite').addEventListener('click', async () => {
     try {
       const res = await api('/company/invitations', {
         method: 'POST',
         body: {
-          email: document.getElementById('invite-email').value || null,
-          role_id: document.getElementById('invite-role').value
+          email: page.querySelector('#invite-email').value || null,
+          role_id: page.querySelector('#invite-role').value
         }
       });
-      document.getElementById('invite-result').style.display = 'block';
-      document.getElementById('invite-code-display').textContent = res.data.token;
-      document.getElementById('invite-link-display').textContent = res.data.invite_link;
+      page.querySelector('#invite-result').style.display = 'block';
+      page.querySelector('#invite-code-display').textContent = res.data.token;
+      page.querySelector('#invite-link-display').textContent = res.data.invite_link;
       showToast('Undangan berhasil dibuat!', 'success');
     } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  // Role update and member removal
+  page.querySelectorAll('.member-role-select').forEach(select => {
+    select.onchange = async () => {
+      try {
+        await api(`/company/members/${select.dataset.memberId}/role`, { method: 'PUT', body: { role_id: select.value } });
+        showToast('Role anggota diperbarui.', 'success');
+      } catch (err) { showToast(err.message, 'error'); }
+    };
+  });
+
+  page.querySelectorAll('.btn-remove-member').forEach(btn => {
+    btn.onclick = async () => {
+      if (!confirm('Hapus anggota ini?')) return;
+      try {
+        await api(`/company/members/${btn.dataset.memberId}`, { method: 'DELETE' });
+        showToast('Anggota dihapus.', 'success');
+        renderMembersTab(content, page);
+      } catch (err) { showToast(err.message, 'error'); }
+    };
   });
 }
 
 // === ROLES TAB (REDESIGN) ===
-async function renderRolesTab(content) {
+async function renderRolesTab(content, page) {
   const [rolesRes, permsRes] = await Promise.all([
     api('/company/roles'),
     api('/company/permissions')
@@ -338,11 +363,10 @@ async function renderRolesTab(content) {
     </div>
   `;
 
-  // Event Listeners
-  setupRoleEvents(content, roles, allPerms);
+  setupRoleEvents(page, roles, allPerms);
 }
 
-function setupRoleEvents(content, roles, allPerms) {
+function setupRoleEvents(page, roles, allPerms) {
   let currentRoleId = null;
 
   const resourceLabels = {
@@ -352,37 +376,35 @@ function setupRoleEvents(content, roles, allPerms) {
     company_settings: '🏢 Pengaturan'
   };
 
-  const resourceIcons = { document: '📄', product: '📦', contact: '👥', receipt: '🧾', dashboard: '📊', report: '📈', reminder: '🔔', members: '👤', roles: '🔐', company_settings: '🏢' };
-
   // Open Edit Modal
-  document.querySelectorAll('.btn-edit-role').forEach(btn => {
+  page.querySelectorAll('.btn-edit-role').forEach(btn => {
     btn.addEventListener('click', () => {
       const roleId = btn.dataset.roleId;
       const role = roles.find(r => getId(r) === roleId);
       if (!role) return;
 
       currentRoleId = roleId;
-      document.getElementById('modal-role-name').textContent = role.name;
-      document.getElementById('modal-role-desc').value = role.description || '';
-      document.getElementById('role-detail-modal').style.display = 'flex';
+      page.querySelector('#modal-role-name').textContent = role.name;
+      page.querySelector('#modal-role-desc').value = role.description || '';
+      page.querySelector('#role-detail-modal').style.display = 'flex';
 
-      renderPermissionGrid(role.permissions || [], allPerms, resourceLabels);
+      renderPermissionGrid(page, role.permissions || [], allPerms, resourceLabels);
     });
   });
 
   // Close Modals
-  const closeModal = () => document.getElementById('role-detail-modal').style.display = 'none';
-  document.getElementById('btn-close-role-modal').onclick = closeModal;
-  document.getElementById('btn-cancel-role-modal').onclick = closeModal;
+  const closeModal = () => page.querySelector('#role-detail-modal').style.display = 'none';
+  page.querySelector('#btn-close-role-modal').onclick = closeModal;
+  page.querySelector('#btn-cancel-role-modal').onclick = closeModal;
 
   // Save Role Details
-  document.getElementById('btn-save-role-detail').onclick = async () => {
-    const btn = document.getElementById('btn-save-role-detail');
+  page.querySelector('#btn-save-role-detail').onclick = async () => {
+    const btn = page.querySelector('#btn-save-role-detail');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
 
     const permissions = [];
-    document.querySelectorAll('.modal-perm-toggle').forEach(cb => {
+    page.querySelectorAll('.modal-perm-toggle').forEach(cb => {
       if (cb.checked) permissions.push(cb.dataset.perm);
     });
 
@@ -390,12 +412,12 @@ function setupRoleEvents(content, roles, allPerms) {
       await api(`/company/roles/${currentRoleId}`, {
         method: 'PUT',
         body: {
-          description: document.getElementById('modal-role-desc').value,
+          description: page.querySelector('#modal-role-desc').value,
           permissions
         }
       });
       showToast('Role berhasil diperbarui!', 'success');
-      renderRolesTab(document.getElementById('company-settings-content'));
+      renderRolesTab(page.querySelector('#company-settings-content'), page);
       closeModal();
     } catch (err) { showToast(err.message, 'error'); }
     finally {
@@ -405,31 +427,31 @@ function setupRoleEvents(content, roles, allPerms) {
   };
 
   // Add role
-  document.getElementById('btn-add-role').onclick = async () => {
+  page.querySelector('#btn-add-role').onclick = async () => {
     const name = prompt('Masukkan nama role baru:');
     if (!name) return;
     try {
       await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
       showToast('Role berhasil dibuat!', 'success');
-      renderRolesTab(document.getElementById('company-settings-content'));
+      renderRolesTab(page.querySelector('#company-settings-content'), page);
     } catch (err) { showToast(err.message, 'error'); }
   };
 
   // Delete role
-  document.querySelectorAll('.btn-delete-role').forEach(btn => {
+  page.querySelectorAll('.btn-delete-role').forEach(btn => {
     btn.onclick = async () => {
       if (!confirm('Hapus role ini?')) return;
       try {
-        await api(`/company/roles/${btn.dataset.roleId}`, { method: 'DELETE' });
+        await api(`/company/members/roles/${btn.dataset.roleId}`, { method: 'DELETE' }); // Adjusted path if needed
         showToast('Role berhasil dihapus.', 'success');
-        renderRolesTab(document.getElementById('company-settings-content'));
+        renderRolesTab(page.querySelector('#company-settings-content'), page);
       } catch (err) { showToast(err.message, 'error'); }
     };
   });
 }
 
-function renderPermissionGrid(activePerms, allPerms, labels) {
-  const grid = document.getElementById('modal-perm-grid');
+function renderPermissionGrid(page, activePerms, allPerms, labels) {
+  const grid = page.querySelector('#modal-perm-grid');
   const groups = {};
   
   allPerms.forEach(p => {
