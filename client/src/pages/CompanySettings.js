@@ -46,7 +46,19 @@ async function loadTab(tab) {
     else if (tab === 'roles') await renderRolesTab(content);
   } catch (err) {
     console.error('Tab load error:', err);
-    content.innerHTML = `<div class="empty-state"><p>Gagal memuat. ${err.message}</p></div>`;
+    const isNotFound = err.message && err.message.includes('tidak ditemukan');
+    content.innerHTML = `
+      <div class="card" style="padding:var(--space-2xl);text-align:center">
+        <div style="font-size:2rem;margin-bottom:var(--space-md)">${isNotFound ? '🏢' : '❌'}</div>
+        <h3 style="margin-bottom:var(--space-sm)">${isNotFound ? 'Perusahaan Belum Terdaftar' : 'Gagal Memuat'}</h3>
+        <p style="color:var(--text-secondary);margin-bottom:var(--space-lg)">${
+          isNotFound 
+            ? 'Akun Anda belum terhubung dengan perusahaan. Silakan logout dan login kembali untuk mengaktifkan fitur ini secara otomatis.'
+            : err.message
+        }</p>
+        ${isNotFound ? `<button class="btn btn-primary" onclick="localStorage.clear(); window.location.hash='#/login'; window.location.reload();">🔄 Logout & Login Ulang</button>` : ''}
+      </div>
+    `;
   }
 }
 

@@ -88,7 +88,7 @@ const authController = {
   async login(req, res, next) {
     try {
       const { email, password } = req.body;
-      const user = await User.findByEmail(email);
+      let user = await User.findByEmail(email);
       if (!user) {
         return res.status(401).json({ success: false, message: 'Email atau password salah.' });
       }
@@ -96,19 +96,51 @@ const authController = {
       if (!valid) {
         return res.status(401).json({ success: false, message: 'Email atau password salah.' });
       }
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
+
+      // === AUTO-MIGRATE: Create company for legacy users who don't have one ===
+      let company = null;
+      if (!user.company_id) {
+        console.log(`🔄 Auto-migrating user ${user.email} to multi-tenant...`);
+        company = await CompanyModel.create({
+          name: user.business_name || `Bisnis ${user.name}`,
+          owner_id: user._id,
+          address: user.business_address || '',
+          npwp: user.npwp || '',
+          invoice_prefix: user.invoice_prefix || 'INV',
+          invoice_counter: user.invoice_counter || 0,
+          default_tax_percent: user.default_tax_percent || 11
+        });
+        const { ownerRole } = await RoleModel.createDefaultRoles(company._id);
+        user = await User.update(user._id, {
+          company_id: company._id,
+          role_id: ownerRole._id
+        });
+
+        // Also tag existing data with company_id
+        const mongoose = require('mongoose');
+        const models = ['Document', 'Contact', 'Product', 'Receipt', 'ActivityLog', 'PaymentReminder'];
+        for (const modelName of models) {
+          try {
+            const Model = mongoose.model(modelName);
+            await Model.updateMany(
+              { user_id: user._id, $or: [{ company_id: null }, { company_id: { $exists: false } }] },
+              { company_id: company._id }
+            );
+          } catch (e) { /* model may not exist yet, skip */ }
+        }
+        console.log(`✅ User ${user.email} migrated to company: ${company.name}`);
+      } else {
+        company = await CompanyModel.findById(user.company_id);
+      }
+
+      // Re-fetch user to get updated data
+      const userData = await User.findById(user._id || user.id);
+
+      const accessToken = generateAccessToken(userData);
+      const refreshToken = generateRefreshToken(userData);
 
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      await User.saveRefreshToken(user.id, refreshToken, expiresAt);
-
-      const userData = await User.findById(user.id);
-
-      // Get company info
-      let company = null;
-      if (userData.company_id) {
-        company = await CompanyModel.findById(userData.company_id);
-      }
+      await User.saveRefreshToken(userData.id, refreshToken, expiresAt);
 
       res.json({ success: true, message: 'Login berhasil!', data: { user: userData, company, accessToken, refreshToken } });
     } catch (error) { next(error); }
@@ -147,7 +179,18 @@ const authController = {
           role_id: ownerRole._id
         });
       } else {
-        if (user.company_id) {
+        // Auto-migrate existing Google user without company
+        if (!user.company_id) {
+          company = await CompanyModel.create({
+            name: user.business_name || `Bisnis ${user.name}`,
+            owner_id: user._id
+          });
+          const { ownerRole } = await RoleModel.createDefaultRoles(company._id);
+          user = await User.update(user._id, {
+            company_id: company._id,
+            role_id: ownerRole._id
+          });
+        } else {
           company = await CompanyModel.findById(user.company_id);
         }
       }
