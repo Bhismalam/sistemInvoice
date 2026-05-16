@@ -298,7 +298,7 @@ async function renderMembersTab(content, page) {
         ${isOwner || perms.includes('create:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>' : ''}
       </div>
       <div style="overflow-x:auto">
-        <table class="table">
+        <table class="data-table">
           <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Aksi</th></tr></thead>
           <tbody>
             ${members.map(m => {
