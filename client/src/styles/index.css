@@ -12,7 +12,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: var(--accent-primary); text-decoration: none; }
-button { cursor: pointer; font-family: inherit; }
+button { cursor: pointer; font-family: inherit; color: inherit; }
 input, select, textarea { font-family: inherit; font-size: inherit; }
 ul, ol { list-style: none; }
 img { max-width: 100%; display: block; }
