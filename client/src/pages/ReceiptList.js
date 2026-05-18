@@ -48,11 +48,11 @@ export function renderReceiptList(container, routeParams = {}) {
             <td>${formatDate(r.payment_date)}</td>
             <td><span class="badge badge-draft">${r.payment_method}</span></td>
             <td style="text-align:right;font-weight:600;color:${transactionType === 'sales' ? 'var(--success)' : 'var(--danger)'}">${formatCurrency(r.amount)}</td>
-            <td><button class="btn btn-ghost btn-sm del-r" data-id="${r.id}" style="color:var(--danger)">🗑️</button></td>
+            <td><button class="btn btn-ghost btn-sm del-r" data-id="${r.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td>
           </tr>
         `).join('')}
         </tbody>
-      </table>` : `<div class="empty-state"><div class="empty-state__icon">🧾</div><p class="empty-state__title">Belum ada kuitansi</p></div>`;
+      </table>` : `<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:receipt" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada kuitansi</p></div>`;
       
       document.querySelectorAll('.del-r').forEach(b => b.addEventListener('click', async () => { 
         if(confirm('Hapus kuitansi ini?')) { 

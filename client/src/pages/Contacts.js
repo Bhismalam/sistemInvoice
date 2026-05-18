@@ -11,7 +11,7 @@ export function renderContacts(container) {
     <div class="glass-card" style="padding:var(--space-xl)">
       <div class="flex items-center gap-lg" style="margin-bottom:var(--space-xl)">
         <div class="tabs" id="type-tabs"><button class="tab-btn active" data-type="">Semua</button><button class="tab-btn" data-type="customer">Pelanggan</button><button class="tab-btn" data-type="supplier">Supplier</button></div>
-        <input type="text" class="form-input" placeholder="🔍 Cari mitra..." id="search-contact" style="max-width:240px" />
+        <input type="text" class="form-input" placeholder="Cari mitra..." id="search-contact" style="max-width:240px" />
       </div>
       <div id="contact-list"><div class="page-loading"><div class="spinner"></div></div></div>
     </div>
@@ -35,8 +35,8 @@ export function renderContacts(container) {
             <p class="text-muted truncate" style="font-size:0.8rem">${c.email || c.phone || '-'}</p>
           </div>
           <div style="text-align:right;font-size:0.85rem"><div style="font-weight:600">${formatCurrency(c.stats?.total_revenue || 0)}</div><div class="text-muted">${c.stats?.invoice_count || 0} invoice</div></div>
-          <div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm edit-c" data-id="${c.id}">✏️</button><button class="btn btn-ghost btn-sm del-c" data-id="${c.id}" style="color:var(--danger)">🗑️</button></div>
-        </div>`).join('') : '<div class="empty-state"><div class="empty-state__icon">👥</div><p class="empty-state__title">Belum ada mitra</p></div>';
+          <div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm edit-c" data-id="${c.id}"><iconify-icon icon="lucide:pencil" width="16" height="16"></iconify-icon></button><button class="btn btn-ghost btn-sm del-c" data-id="${c.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></div>
+        </div>`).join('') : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:users" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada mitra</p></div>';
       list.querySelectorAll('.del-c').forEach(b => b.addEventListener('click', async () => { if (confirm('Hapus kontak?')) { await api(`/contacts/${b.dataset.id}`, {method:'DELETE'}); showToast('Kontak dihapus','success'); load(); }}));
     } catch (err) { document.getElementById('contact-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }

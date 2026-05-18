@@ -7,8 +7,8 @@ export function renderReports(container) {
   page.innerHTML = `<div class="animate-slide-up">
     <div class="page-header"><h1 class="page-title">Laporan Keuangan</h1></div>
     <div class="grid-2">
-      <div class="glass-card" style="padding:var(--space-xl)"><h3 style="font-weight:600;margin-bottom:var(--space-base)">📊 Aging Report</h3><div id="aging"><div class="page-loading"><div class="spinner"></div></div></div></div>
-      <div class="glass-card" style="padding:var(--space-xl)"><h3 style="font-weight:600;margin-bottom:var(--space-base)">💰 Laba Rugi</h3><div id="pnl"><div class="page-loading"><div class="spinner"></div></div></div></div>
+      <div class="glass-card" style="padding:var(--space-xl)"><h3 style="font-weight:600;margin-bottom:var(--space-base)"><iconify-icon icon="lucide:bar-chart-3" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Aging Report</h3><div id="aging"><div class="page-loading"><div class="spinner"></div></div></div></div>
+      <div class="glass-card" style="padding:var(--space-xl)"><h3 style="font-weight:600;margin-bottom:var(--space-base)"><iconify-icon icon="lucide:banknote" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Laba Rugi</h3><div id="pnl"><div class="page-loading"><div class="spinner"></div></div></div></div>
     </div></div>`;
 
   Promise.all([api('/reports/aging'), api('/reports/profit-loss')]).then(([agingRes, pnlRes]) => {

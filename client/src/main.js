@@ -1,3 +1,4 @@
+import 'iconify-icon';
 import './styles/index.css';
 import './styles/auth.css';
 import './styles/layout.css';

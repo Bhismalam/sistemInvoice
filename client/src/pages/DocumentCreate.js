@@ -36,7 +36,7 @@ export function renderDocumentCreate(container, routeParams = {}) {
           </div>
         </div>
 
-        <h3 style="margin:var(--space-xl) 0 var(--space-base);font-weight:600">📦 Item</h3>
+        <h3 style="margin:var(--space-xl) 0 var(--space-base);font-weight:600"><iconify-icon icon="lucide:package" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Item</h3>
         <table class="data-table" id="items-table">
           <thead><tr><th>Produk/Deskripsi</th><th style="width:100px">Qty</th><th style="width:160px">Harga</th><th style="width:160px">Total</th><th style="width:40px"></th></tr></thead>
           <tbody id="items-body"></tbody>
@@ -64,8 +64,8 @@ export function renderDocumentCreate(container, routeParams = {}) {
         </div>
 
         <div class="flex gap-md" style="margin-top:var(--space-xl)">
-          <button type="submit" class="btn btn-primary btn-lg" id="save-draft">💾 Simpan Draft</button>
-          <button type="button" class="btn btn-secondary btn-lg" id="send-document">📤 Kirim ${documentType === 'order' ? 'Order' : 'Invoice'}</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="save-draft"><iconify-icon icon="lucide:save" width="16" height="16"></iconify-icon> Simpan Draft</button>
+          <button type="button" class="btn btn-secondary btn-lg" id="send-document"><iconify-icon icon="lucide:send" width="16" height="16"></iconify-icon> Kirim ${documentType === 'order' ? 'Order' : 'Invoice'}</button>
           <a href="${basePath}" class="btn btn-ghost btn-lg">Batal</a>
         </div>
       </form>
@@ -204,7 +204,7 @@ export function renderDocumentCreate(container, routeParams = {}) {
         notes: document.getElementById('doc-notes').value,
         items
       }});
-      showToast(`Dokumen berhasil ${status === 'sent' ? 'dikirim' : 'disimpan'}! 🎉`, 'success');
+      showToast(`Dokumen berhasil ${status === 'sent' ? 'dikirim' : 'disimpan'}!`, 'success');
       window.location.hash = basePath;
     } catch (err) { showToast(err.message, 'error'); }
   }

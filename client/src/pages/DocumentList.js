@@ -30,7 +30,7 @@ export function renderDocumentList(container, routeParams = {}) {
           <button class="tab-btn" data-status="overdue">Jatuh Tempo</button>
           <button class="tab-btn" data-status="cancelled">Dibatalkan</button>
         </div>
-        <input type="text" class="form-input" placeholder="🔍 Cari nomor atau kontak..." id="search-input" style="max-width:260px" />
+        <input type="text" class="form-input" placeholder="Cari nomor atau kontak..." id="search-input" style="max-width:260px" />
       </div>
       <div id="document-table"><div class="page-loading"><div class="spinner"></div></div></div>
     </div>
@@ -85,19 +85,19 @@ export function renderDocumentList(container, routeParams = {}) {
                 <td>${formatDate(doc.issue_date)}</td>
                 <td>
                   ${formatDate(doc.due_date)}
-                  ${isDueSoon ? `<span class="due-badge due-badge--soon">⏰ ${daysLeft}h</span>` : ''}
-                  ${isOverdue ? `<span class="due-badge due-badge--overdue">⚠️ Lewat</span>` : ''}
+                  ${isDueSoon ? `<span class="due-badge due-badge--soon"><iconify-icon icon="lucide:alarm-clock" width="14" height="14" style="vertical-align:-2px"></iconify-icon> ${daysLeft}h</span>` : ''}
+                  ${isOverdue ? `<span class="due-badge due-badge--overdue"><iconify-icon icon="lucide:alert-triangle" width="14" height="14" style="vertical-align:-2px"></iconify-icon> Lewat</span>` : ''}
                 </td>
                 <td style="font-weight:600">${formatCurrency(doc.total)}</td>
                 <td><span class="badge badge-${doc.status}">${getStatusLabel(doc.status)}</span></td>
                 <td>
                   <div style="display:flex;gap:4px;flex-wrap:wrap">
-                    ${doc.status === 'draft' ? `<button class="btn btn-ghost btn-sm send-btn" data-id="${doc.id}" title="Kirim">📤</button>` : ''}
+                    ${doc.status === 'draft' ? `<button class="btn btn-ghost btn-sm send-btn" data-id="${doc.id}" title="Kirim"><iconify-icon icon="lucide:send" width="16" height="16"></iconify-icon></button>` : ''}
                     ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice ? `
-                      <button class="btn btn-ghost btn-sm pay-btn" data-id="${doc.id}" title="Bayar">💰</button>
-                      <button class="btn btn-ghost btn-sm cancel-btn" data-id="${doc.id}" title="Batalkan" style="color:var(--danger)">❌</button>
+                      <button class="btn btn-ghost btn-sm pay-btn" data-id="${doc.id}" title="Bayar"><iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon></button>
+                      <button class="btn btn-ghost btn-sm cancel-btn" data-id="${doc.id}" title="Batalkan" style="color:var(--danger)"><iconify-icon icon="lucide:x-circle" width="16" height="16"></iconify-icon></button>
                     ` : ''}
-                    ${doc.status !== 'paid' ? `<button class="btn btn-ghost btn-sm del-btn" data-id="${doc.id}" title="Hapus">🗑️</button>` : ''}
+                    ${doc.status !== 'paid' ? `<button class="btn btn-ghost btn-sm del-btn" data-id="${doc.id}" title="Hapus"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button>` : ''}
                   </div>
                 </td>
               </tr>
@@ -112,7 +112,7 @@ export function renderDocumentList(container, routeParams = {}) {
             ${currentPage < meta.totalPages ? `<button class="page-btn" id="next-page">→</button>` : ''}
           </div>
         </div>
-      ` : `<div class="empty-state"><div class="empty-state__icon">📄</div><p class="empty-state__title">Belum ada ${title.toLowerCase()}</p><p class="empty-state__text">Buat ${title.toLowerCase()} pertama Anda</p><a href="${basePath}/new" class="btn btn-primary">+ Buat Baru</a></div>`;
+      ` : `<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:file-text" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada ${title.toLowerCase()}</p><p class="empty-state__text">Buat ${title.toLowerCase()} pertama Anda</p><a href="${basePath}/new" class="btn btn-primary">+ Buat Baru</a></div>`;
 
       // Event handlers
       document.querySelectorAll('.send-btn').forEach(b => b.addEventListener('click', () => updateStatus(b.dataset.id, 'sent')));
@@ -127,7 +127,7 @@ export function renderDocumentList(container, routeParams = {}) {
   async function updateStatus(id, status) {
     try { 
       await api(`/documents/${id}/status`, { method: 'PATCH', body: { status } }); 
-      showToast(`Dokumen berhasil dikirim! 📤`, 'success'); 
+      showToast('Dokumen berhasil dikirim!', 'success'); 
       loadDocuments(); 
     } catch (err) { showToast(err.message, 'error'); }
   }

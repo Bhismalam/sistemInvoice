@@ -9,7 +9,7 @@ export function renderProducts(container) {
     <div class="page-header"><div><h1 class="page-title">Produk & Jasa</h1><p class="page-subtitle">Kelola katalog produk dan jasa</p></div>
       <button class="btn btn-primary" id="add-product">+ Tambah Produk</button></div>
     <div class="glass-card" style="padding:var(--space-xl)">
-      <input type="text" class="form-input" placeholder="🔍 Cari produk..." id="search-prod" style="max-width:300px;margin-bottom:var(--space-xl)" />
+      <input type="text" class="form-input" placeholder="Cari produk..." id="search-prod" style="max-width:300px;margin-bottom:var(--space-xl)" />
       <div id="product-list"><div class="page-loading"><div class="spinner"></div></div></div>
     </div><div id="prod-modal"></div></div>`;
 
@@ -24,8 +24,8 @@ export function renderProducts(container) {
         ${res.data.map(p => `<tr><td><strong>${p.name}</strong>${p.description ? `<br><span class="text-muted" style="font-size:0.8rem">${p.description}</span>` : ''}</td>
         <td><span class="badge badge-draft">${p.category || '-'}</span></td><td>${p.unit}</td><td style="text-align:right;font-weight:600">${formatCurrency(p.price)}</td>
         <td style="text-align:right"><span style="color:${p.stock < 10 ? 'var(--danger)' : 'var(--text-primary)'}">${p.stock}</span></td>
-        <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)">🗑️</button></td></tr>`).join('')}
-      </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon">📦</div><p class="empty-state__title">Belum ada produk</p></div>';
+        <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:box" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada produk</p></div>';
       document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(confirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
     } catch(err) { document.getElementById('product-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }

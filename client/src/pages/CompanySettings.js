@@ -27,14 +27,14 @@ export async function renderCompanySettings(container) {
   page.innerHTML = `
     <div class="settings-container" style="margin-top: 0;">
       <div class="settings-header-section">
-        <h1 class="page-title">⚙️ Pengaturan</h1>
+        <h1 class="page-title"><iconify-icon icon="lucide:settings" width="24" height="24" style="vertical-align:-4px"></iconify-icon> Pengaturan</h1>
         <p class="page-subtitle">Kelola akun${canEditCompany ? ', profil bisnis' : ''}${canManageMembers ? ', tim' : ''}${canManageRoles ? ', dan hak akses' : ''} dalam satu tempat.</p>
         
         <div class="settings-nav" id="company-settings-tabs">
-          <button class="settings-nav-item active" data-tab="account">👤 Profil Akun</button>
-          <button class="settings-nav-item" data-tab="profile">🏢 Profil Bisnis</button>
-          ${canManageMembers ? '<button class="settings-nav-item" data-tab="members">👥 Anggota Tim</button>' : ''}
-          ${canManageRoles ? '<button class="settings-nav-item" data-tab="roles">🔐 Hak Akses (Roles)</button>' : ''}
+          <button class="settings-nav-item active" data-tab="account"><iconify-icon icon="lucide:user" width="16" height="16"></iconify-icon> Profil Akun</button>
+          <button class="settings-nav-item" data-tab="profile"><iconify-icon icon="lucide:building-2" width="16" height="16"></iconify-icon> Profil Bisnis</button>
+          ${canManageMembers ? '<button class="settings-nav-item" data-tab="members"><iconify-icon icon="lucide:users" width="16" height="16"></iconify-icon> Anggota Tim</button>' : ''}
+          ${canManageRoles ? '<button class="settings-nav-item" data-tab="roles"><iconify-icon icon="lucide:shield-check" width="16" height="16"></iconify-icon> Hak Akses (Roles)</button>' : ''}
         </div>
       </div>
 
@@ -78,14 +78,14 @@ async function loadTab(tab, page) {
     const isNotFound = err.message && err.message.includes('tidak ditemukan');
     content.innerHTML = `
       <div class="card" style="padding:var(--space-2xl);text-align:center">
-        <div style="font-size:2rem;margin-bottom:var(--space-md)">${isNotFound ? '🏢' : '❌'}</div>
+        <div style="font-size:2rem;margin-bottom:var(--space-md)">${isNotFound ? '<iconify-icon icon="lucide:building-2" width="48" height="48"></iconify-icon>' : '<iconify-icon icon="lucide:x-circle" width="48" height="48"></iconify-icon>'}</div>
         <h3 style="margin-bottom:var(--space-sm)">${isNotFound ? 'Perusahaan Belum Terdaftar' : 'Gagal Memuat'}</h3>
         <p style="color:var(--text-secondary);margin-bottom:var(--space-lg)">${
           isNotFound 
             ? 'Akun Anda belum terhubung dengan perusahaan. Silakan logout dan login kembali untuk mengaktifkan fitur ini secara otomatis.'
             : err.message
         }</p>
-        ${isNotFound ? `<button class="btn btn-primary" onclick="localStorage.clear(); window.location.hash='#/login'; window.location.reload();">🔄 Logout & Login Ulang</button>` : ''}
+        ${isNotFound ? `<button class="btn btn-primary" onclick="localStorage.clear(); window.location.hash='#/login'; window.location.reload();"><iconify-icon icon="lucide:refresh-cw" width="16" height="16"></iconify-icon> Logout & Login Ulang</button>` : ''}
       </div>
     `;
   }
@@ -112,7 +112,7 @@ async function renderAccountTab(content, page) {
                 <span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>
                 ${role ? role.name : 'Tanpa Role'}
               </span>
-              ${company ? `<span style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:4px">🏢 ${company.name}</span>` : ''}
+              ${company ? `<span style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:4px"><iconify-icon icon="lucide:building-2" width="14" height="14"></iconify-icon> ${company.name}</span>` : ''}
             </div>
           </div>
         </div>
@@ -134,27 +134,27 @@ async function renderAccountTab(content, page) {
               <input type="tel" class="form-input" id="acc-phone" value="${user.phone || ''}" />
             </div>
           </div>
-          <button type="submit" class="btn btn-primary">💾 Simpan Profil</button>
+          <button type="submit" class="btn btn-primary"><iconify-icon icon="lucide:save" width="16" height="16"></iconify-icon> Simpan Profil</button>
         </form>
       </div>
 
       <!-- Role & Permissions Summary -->
       ${role ? `
       <div class="card" style="padding:var(--space-xl)">
-        <h3 style="margin-bottom:var(--space-lg);font-weight:600">🔐 Hak Akses Anda</h3>
+        <h3 style="margin-bottom:var(--space-lg);font-weight:600"><iconify-icon icon="lucide:shield-check" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Hak Akses Anda</h3>
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-sm)">
           ${(role.permissions || []).map(p => {
             const [action, resource] = p.split(':');
-            const icons = { create: '➕', read: '👁️', update: '✏️', delete: '🗑️' };
+            const icons = { create: '<iconify-icon icon="lucide:plus" width="12" height="12"></iconify-icon>', read: '<iconify-icon icon="lucide:eye" width="12" height="12"></iconify-icon>', update: '<iconify-icon icon="lucide:pencil" width="12" height="12"></iconify-icon>', delete: '<iconify-icon icon="lucide:trash-2" width="12" height="12"></iconify-icon>' };
             return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:500;background:rgba(99,102,241,0.1);color:var(--accent-primary)">${icons[action] || '•'} ${action}:${resource}</span>`;
           }).join('')}
         </div>
-        ${role.name === 'Owner' ? '<p style="margin-top:var(--space-md);font-size:0.85rem;color:var(--text-muted)">💡 Sebagai Owner, Anda memiliki akses penuh ke semua fitur.</p>' : ''}
+        ${role.name === 'Owner' ? '<p style="margin-top:var(--space-md);font-size:0.85rem;color:var(--text-muted)"><iconify-icon icon="lucide:lightbulb" width="14" height="14" style="vertical-align:-2px"></iconify-icon> Sebagai Owner, Anda memiliki akses penuh ke semua fitur.</p>' : ''}
       </div>` : ''}
 
       <!-- Change Password -->
       <div class="card" style="padding:var(--space-xl)">
-        <h3 style="margin-bottom:var(--space-lg);font-weight:600">🔑 Ganti Password</h3>
+        <h3 style="margin-bottom:var(--space-lg);font-weight:600"><iconify-icon icon="lucide:key-round" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Ganti Password</h3>
         <form id="password-form">
           <div class="form-row">
             <div class="form-group">
@@ -166,7 +166,7 @@ async function renderAccountTab(content, page) {
               <input type="password" class="form-input" id="pw-new" placeholder="Minimal 8 karakter" required minlength="8" />
             </div>
           </div>
-          <button type="submit" class="btn btn-primary">🔄 Ganti Password</button>
+          <button type="submit" class="btn btn-primary"><iconify-icon icon="lucide:refresh-cw" width="16" height="16"></iconify-icon> Ganti Password</button>
         </form>
       </div>
     </div>
@@ -249,7 +249,7 @@ async function renderProfileTab(content, page) {
         <div class="form-group"><label class="form-label">Pajak Default (%)</label>
           <input type="number" class="form-input" id="cp-tax" value="${c.default_tax_percent || 11}" ${ro} /></div>
       </div>
-      ${!readOnly ? '<button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>' : ''}
+      ${!readOnly ? '<button type="submit" class="btn btn-primary"><iconify-icon icon="lucide:save" width="16" height="16"></iconify-icon> Simpan Perubahan</button>' : ''}
     </form>
   `;
 
@@ -294,8 +294,8 @@ async function renderMembersTab(content, page) {
   content.innerHTML = `
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
-        <h3>👥 Anggota Tim (${members.length})</h3>
-        ${isOwner || perms.includes('create:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member">➕ Undang Anggota</button>' : ''}
+        <h3><iconify-icon icon="lucide:users" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Anggota Tim (${members.length})</h3>
+        ${isOwner || perms.includes('create:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member"><iconify-icon icon="lucide:user-plus" width="14" height="14"></iconify-icon> Undang Anggota</button>' : ''}
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
@@ -315,7 +315,7 @@ async function renderMembersTab(content, page) {
                     <select class="form-input form-input--sm member-role-select" data-member-id="${memberId}">
                       ${roles.map(r => `<option value="${getId(r)}" ${memberRoleId === getId(r) ? 'selected' : ''}>${r.name}</option>`).join('')}
                     </select>
-                    <button class="btn btn-danger btn-sm btn-remove-member" data-member-id="${memberId}" title="Hapus anggota">🗑️</button>
+                    <button class="btn btn-danger btn-sm btn-remove-member" data-member-id="${memberId}" title="Hapus anggota"><iconify-icon icon="lucide:trash-2" width="14" height="14"></iconify-icon></button>
                   </div>
                 `}</td>
               </tr>
@@ -328,7 +328,7 @@ async function renderMembersTab(content, page) {
     <!-- Invite Modal -->
     <div id="invite-modal" class="modal" style="display:none">
       <div class="modal-content card">
-        <h3>📩 Undang Anggota Baru</h3>
+        <h3><iconify-icon icon="lucide:mail" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Undang Anggota Baru</h3>
         <div class="form-group"><label class="form-label">Email (Opsional)</label>
           <input type="email" class="form-input" id="invite-email" placeholder="Kosongkan untuk undangan umum" /></div>
         <div class="form-group"><label class="form-label">Role</label>
@@ -338,7 +338,7 @@ async function renderMembersTab(content, page) {
         <div id="invite-result" style="display:none;margin:var(--space-md) 0;padding:var(--space-md);border-radius:var(--radius-md);background:var(--bg-secondary)">
           <p><strong>Kode Undangan:</strong> <code id="invite-code-display" style="font-size:1.2rem;letter-spacing:2px"></code></p>
           <p id="invite-link-display" style="word-break:break-all;font-size:0.85rem;margin-top:var(--space-sm)"></p>
-          <button class="btn btn-sm" id="btn-copy-link">📋 Salin Link</button>
+          <button class="btn btn-sm" id="btn-copy-link"><iconify-icon icon="lucide:clipboard" width="14" height="14"></iconify-icon> Salin Link</button>
         </div>
         <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md)">
           <button class="btn btn-primary" id="btn-send-invite">Buat Undangan</button>
@@ -413,8 +413,8 @@ async function renderRolesTab(content, page) {
   content.innerHTML = `
     <div class="card">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
-        <h3>🔐 Konfigurasi Role Akses</h3>
-        ${isOwner || perms.includes('create:roles') ? '<button class="btn btn-primary btn-sm" id="btn-add-role">➕ Tambah Role</button>' : ''}
+        <h3><iconify-icon icon="lucide:shield-check" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Konfigurasi Role Akses</h3>
+        ${isOwner || perms.includes('create:roles') ? '<button class="btn btn-primary btn-sm" id="btn-add-role"><iconify-icon icon="lucide:plus" width="14" height="14"></iconify-icon> Tambah Role</button>' : ''}
       </div>
       
       <div class="roles-matrix">
@@ -444,7 +444,7 @@ async function renderRolesTab(content, page) {
                   <td>
                     <div style="display:flex;align-items:center;gap:10px">
                       <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:1.1rem">
-                        ${r.name === 'Owner' ? '👑' : '👤'}
+                        ${r.name === 'Owner' ? '<iconify-icon icon="lucide:crown" width="18" height="18"></iconify-icon>' : '<iconify-icon icon="lucide:user" width="18" height="18"></iconify-icon>'}
                       </div>
                       <div>
                         <div style="font-weight:600">${r.name}</div>
@@ -484,8 +484,8 @@ async function renderRolesTab(content, page) {
                   </td>
                   <td style="text-align:center">
                     <div class="action-group" style="justify-content:center">
-                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="${isOwner || perms.includes('update:roles') ? 'Atur Hak Akses' : 'Lihat Detail'}">⚙️</button>
-                      ${(!r.is_default && (isOwner || perms.includes('delete:roles'))) ? `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}">🗑️</button>` : ''}
+                      <button class="btn-action btn-edit-role" data-role-id="${roleId}" title="${isOwner || perms.includes('update:roles') ? 'Atur Hak Akses' : 'Lihat Detail'}"><iconify-icon icon="lucide:settings" width="16" height="16"></iconify-icon></button>
+                      ${(!r.is_default && (isOwner || perms.includes('delete:roles'))) ? `<button class="btn-action btn-action--delete btn-delete-role" data-role-id="${roleId}"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button>` : ''}
                     </div>
                   </td>
                 </tr>
@@ -500,7 +500,7 @@ async function renderRolesTab(content, page) {
     <div id="role-detail-modal" class="modal" style="display:none">
       <div class="modal-content card" style="max-width:700px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
-          <h3>⚙️ Atur Hak Akses: <span id="modal-role-name"></span></h3>
+          <h3><iconify-icon icon="lucide:settings" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Atur Hak Akses: <span id="modal-role-name"></span></h3>
           <button class="btn-icon" id="btn-close-role-modal">✕</button>
         </div>
         
@@ -514,7 +514,7 @@ async function renderRolesTab(content, page) {
         </div>
 
         <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl);justify-content:flex-end">
-          ${isOwner || perms.includes('update:roles') ? '<button class="btn btn-primary" id="btn-save-role-detail">💾 Simpan Perubahan</button>' : ''}
+          ${isOwner || perms.includes('update:roles') ? '<button class="btn btn-primary" id="btn-save-role-detail"><iconify-icon icon="lucide:save" width="16" height="16"></iconify-icon> Simpan Perubahan</button>' : ''}
           <button class="btn" id="btn-cancel-role-modal">${isOwner || perms.includes('update:roles') ? 'Batal' : 'Tutup'}</button>
         </div>
       </div>
@@ -531,10 +531,10 @@ function setupRoleEvents(page, roles, allPerms) {
   const isOwner = ctx.isOwner;
 
   const resourceLabels = {
-    document: '📄 Dokumen', product: '📦 Produk', contact: '👥 Kontak', 
-    receipt: '🧾 Kuitansi', dashboard: '📊 Dashboard', report: '📈 Laporan', 
-    reminder: '🔔 Pengingat', members: '👤 Anggota', roles: '🔐 Hak Akses', 
-    company_settings: '🏢 Pengaturan'
+    document: '<iconify-icon icon="lucide:file-text" width="14" height="14"></iconify-icon> Dokumen', product: '<iconify-icon icon="lucide:box" width="14" height="14"></iconify-icon> Produk', contact: '<iconify-icon icon="lucide:users" width="14" height="14"></iconify-icon> Kontak', 
+    receipt: '<iconify-icon icon="lucide:receipt" width="14" height="14"></iconify-icon> Kuitansi', dashboard: '<iconify-icon icon="lucide:layout-dashboard" width="14" height="14"></iconify-icon> Dashboard', report: '<iconify-icon icon="lucide:trending-up" width="14" height="14"></iconify-icon> Laporan', 
+    reminder: '<iconify-icon icon="lucide:bell" width="14" height="14"></iconify-icon> Pengingat', members: '<iconify-icon icon="lucide:user" width="14" height="14"></iconify-icon> Anggota', roles: '<iconify-icon icon="lucide:shield-check" width="14" height="14"></iconify-icon> Hak Akses', 
+    company_settings: '<iconify-icon icon="lucide:building-2" width="14" height="14"></iconify-icon> Pengaturan'
   };
 
   // Open Edit Modal
@@ -584,7 +584,7 @@ function setupRoleEvents(page, roles, allPerms) {
       } catch (err) { showToast(err.message, 'error'); }
       finally {
         btn.disabled = false;
-        btn.innerHTML = '💾 Simpan Perubahan';
+        btn.innerHTML = '<iconify-icon icon="lucide:save" width="16" height="16"></iconify-icon> Simpan Perubahan';
       }
     };
   }

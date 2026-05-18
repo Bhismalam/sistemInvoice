@@ -38,7 +38,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
     if (isInvoice && doc.status !== 'paid' && doc.status !== 'cancelled') {
       if (isOverdue) {
         dueDateWarning = `<div class="due-warning due-warning--overdue">
-          <span class="due-warning__icon">⚠️</span>
+          <span class="due-warning__icon"><iconify-icon icon="lucide:alert-triangle" width="20" height="20"></iconify-icon></span>
           <div>
             <strong>Jatuh tempo ${Math.abs(daysUntilDue)} hari yang lalu!</strong>
             <p>Segera lakukan pembayaran untuk menghindari denda keterlambatan.</p>
@@ -46,7 +46,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
         </div>`;
       } else if (daysUntilDue <= 3) {
         dueDateWarning = `<div class="due-warning due-warning--urgent">
-          <span class="due-warning__icon">🔔</span>
+          <span class="due-warning__icon"><iconify-icon icon="lucide:bell-ring" width="20" height="20"></iconify-icon></span>
           <div>
             <strong>Jatuh tempo dalam ${daysUntilDue} hari!</strong>
             <p>Pastikan pembayaran dilakukan sebelum tanggal ${formatDate(doc.due_date)}.</p>
@@ -54,7 +54,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
         </div>`;
       } else if (daysUntilDue <= 7) {
         dueDateWarning = `<div class="due-warning due-warning--soon">
-          <span class="due-warning__icon">📅</span>
+          <span class="due-warning__icon"><iconify-icon icon="lucide:calendar" width="20" height="20"></iconify-icon></span>
           <div>
             <strong>Jatuh tempo dalam ${daysUntilDue} hari</strong>
             <p>Pengingat: Pembayaran jatuh tempo ${formatDate(doc.due_date)}.</p>
@@ -70,7 +70,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
       const deleteTime = new Date(cancelTime.getTime() + 24 * 60 * 60 * 1000);
       const hoursLeft = Math.max(0, Math.ceil((deleteTime - now) / (1000 * 60 * 60)));
       cancelledTimer = `<div class="due-warning due-warning--cancelled">
-        <span class="due-warning__icon">🗑️</span>
+        <span class="due-warning__icon"><iconify-icon icon="lucide:trash-2" width="20" height="20"></iconify-icon></span>
         <div>
           <strong>Dokumen dibatalkan</strong>
           <p>Invoice ini akan dihapus otomatis dalam ${hoursLeft} jam.</p>
@@ -117,13 +117,13 @@ export function renderDocumentDetail(container, routeParams = {}) {
         <div>
           <!-- PAYMENT ACTIONS -->
           <div class="glass-card" style="padding:var(--space-xl);margin-bottom:var(--space-xl)">
-            <h3 style="font-weight:600;margin-bottom:var(--space-base)">⚡ Aksi Pembayaran</h3>
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)"><iconify-icon icon="lucide:zap" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Aksi Pembayaran</h3>
             <div class="flex flex-col gap-sm" id="payment-actions">
               ${doc.document_type === 'order' ? `
-                <a href="#/${actualTransactionType === 'sales' ? 'sales' : 'purchases'}/invoices/new?source_order=${doc.id}" class="btn btn-primary w-full">📄 Buat Invoice dari Order</a>
+                <a href="#/${actualTransactionType === 'sales' ? 'sales' : 'purchases'}/invoices/new?source_order=${doc.id}" class="btn btn-primary w-full"><iconify-icon icon="lucide:file-text" width="16" height="16"></iconify-icon> Buat Invoice dari Order</a>
               ` : ''}
               ${doc.status === 'draft' ? `
-                <button class="btn btn-secondary w-full" id="btn-send">📤 Kirim ${actualDocumentType === 'order' ? 'Order' : 'Invoice'}</button>
+                <button class="btn btn-secondary w-full" id="btn-send"><iconify-icon icon="lucide:send" width="16" height="16"></iconify-icon> Kirim ${actualDocumentType === 'order' ? 'Order' : 'Invoice'}</button>
               ` : ''}
               ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice && isSales ? `
                 <div class="payment-method-box">
@@ -136,12 +136,12 @@ export function renderDocumentDetail(container, routeParams = {}) {
                     <option value="kartu_kredit">Kartu Kredit</option>
                   </select>
                   <button class="btn btn-success w-full" id="btn-pay">
-                    <span>💰</span> Tandai Sudah Dibayar
+                    <iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon> Tandai Sudah Dibayar
                   </button>
                 </div>
-                <button class="btn btn-primary w-full" id="pay-midtrans-btn" data-id="${doc.id}" style="padding:14px 20px;font-size:1rem">💳 Bayar Online (Midtrans)</button>
+                <button class="btn btn-primary w-full" id="pay-midtrans-btn" data-id="${doc.id}" style="padding:14px 20px;font-size:1rem"><iconify-icon icon="lucide:credit-card" width="16" height="16"></iconify-icon> Bayar Online (Midtrans)</button>
                 <p class="text-muted" style="font-size:0.8rem;text-align:center;margin-top:var(--space-sm)">Kirim link pembayaran online ke pelanggan.</p>
-                <button class="btn btn-danger-outline w-full" id="btn-cancel">❌ Batalkan Pembayaran</button>
+                <button class="btn btn-danger-outline w-full" id="btn-cancel"><iconify-icon icon="lucide:x-circle" width="16" height="16"></iconify-icon> Batalkan Pembayaran</button>
               ` : ''}
               ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice && isPurchase ? `
                 <div class="payment-method-box">
@@ -154,14 +154,14 @@ export function renderDocumentDetail(container, routeParams = {}) {
                     <option value="kartu_kredit">Kartu Kredit</option>
                   </select>
                   <button class="btn btn-success w-full" id="btn-pay">
-                    <span>💰</span> Bayar Invoice
+                    <iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon> Bayar Invoice
                   </button>
                 </div>
-                <button class="btn btn-danger-outline w-full" id="btn-cancel">❌ Batalkan Pembayaran</button>
+                <button class="btn btn-danger-outline w-full" id="btn-cancel"><iconify-icon icon="lucide:x-circle" width="16" height="16"></iconify-icon> Batalkan Pembayaran</button>
               ` : ''}
               ${doc.status === 'paid' ? `
                 <div class="payment-status-box payment-status-box--paid">
-                  <span class="payment-status-icon">✅</span>
+                  <span class="payment-status-icon"><iconify-icon icon="lucide:check-circle" width="24" height="24"></iconify-icon></span>
                   <div>
                     <strong>Sudah Dibayar</strong>
                     <p>${doc.paid_at ? `Dibayar pada ${formatDate(doc.paid_at)}` : 'Pembayaran sudah dikonfirmasi'}</p>
@@ -171,7 +171,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
               ` : ''}
               ${doc.status === 'cancelled' ? `
                 <div class="payment-status-box payment-status-box--cancelled">
-                  <span class="payment-status-icon">❌</span>
+                  <span class="payment-status-icon"><iconify-icon icon="lucide:x-circle" width="24" height="24"></iconify-icon></span>
                   <div>
                     <strong>Dibatalkan</strong>
                     <p>Invoice ini telah dibatalkan dan akan dihapus otomatis dalam 24 jam.</p>
@@ -184,7 +184,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
 
           <!-- INFO & TRACKING -->
           <div class="glass-card" style="padding:var(--space-xl);margin-bottom:var(--space-xl)">
-            <h3 style="font-weight:600;margin-bottom:var(--space-base)">📋 Info Dokumen</h3>
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)"><iconify-icon icon="lucide:clipboard-list" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Info Dokumen</h3>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);font-size:0.85rem">
               <div class="flex justify-between"><span class="text-muted">Status</span><span class="badge badge-${doc.status}">${getStatusLabel(doc.status)}</span></div>
               <div class="flex justify-between"><span class="text-muted">Tipe</span><span>${typeTitle}</span></div>
@@ -201,7 +201,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
           ${isInvoice ? `
           <!-- PAYMENT TRACKER -->
           <div class="glass-card" style="padding:var(--space-xl)">
-            <h3 style="font-weight:600;margin-bottom:var(--space-base)">🔔 Pengingat Pembayaran</h3>
+            <h3 style="font-weight:600;margin-bottom:var(--space-base)"><iconify-icon icon="lucide:bell" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Pengingat Pembayaran</h3>
             <div id="payment-reminders" style="font-size:0.85rem">
               <div class="spinner" style="margin:var(--space-base) auto"></div>
             </div>
@@ -223,11 +223,11 @@ export function renderDocumentDetail(container, routeParams = {}) {
       btn.disabled = true;
       try {
         await api(`/documents/${doc.id}/status`, { method: 'PATCH', body: { status: 'sent' } });
-        showToast('Dokumen berhasil dikirim! 📤', 'success');
+        showToast('Dokumen berhasil dikirim!', 'success');
         window.location.reload();
       } catch (err) {
         showToast(err.message, 'error');
-        btn.innerHTML = '📤 Kirim';
+        btn.innerHTML = '<iconify-icon icon="lucide:send" width="16" height="16"></iconify-icon> Kirim';
         btn.disabled = false;
       }
     });
@@ -254,7 +254,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
         window.location.reload();
       } catch (err) {
         showToast(err.message, 'error');
-        btn.innerHTML = `<span>💰</span> ${isSales ? 'Tandai Sudah Dibayar' : 'Bayar Invoice'}`;
+        btn.innerHTML = `<iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon> ${isSales ? 'Tandai Sudah Dibayar' : 'Bayar Invoice'}`;
         btn.disabled = false;
       }
     });
@@ -271,7 +271,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
         window.location.reload();
       } catch (err) {
         showToast(err.message, 'error');
-        btn.innerHTML = '❌ Batalkan Pembayaran';
+        btn.innerHTML = '<iconify-icon icon="lucide:x-circle" width="16" height="16"></iconify-icon> Batalkan Pembayaran';
         btn.disabled = false;
       }
     });
@@ -339,7 +339,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
           const reminderDate = new Date(r.reminder_date);
           const isPast = reminderDate < new Date();
           html += `<div class="reminder-item ${isSent ? 'reminder-item--sent' : ''} ${isPast && !isSent ? 'reminder-item--missed' : ''}">
-            <span class="reminder-item__icon">${isSent ? '✅' : isPast ? '⚠️' : '🔔'}</span>
+            <span class="reminder-item__icon">${isSent ? '<iconify-icon icon="lucide:check-circle" width="16" height="16"></iconify-icon>' : isPast ? '<iconify-icon icon="lucide:alert-triangle" width="16" height="16"></iconify-icon>' : '<iconify-icon icon="lucide:bell" width="16" height="16"></iconify-icon>'}</span>
             <div class="reminder-item__content">
               <p>${r.message || 'Pengingat pembayaran'}</p>
               <span class="text-muted">${formatDate(r.reminder_date)}</span>

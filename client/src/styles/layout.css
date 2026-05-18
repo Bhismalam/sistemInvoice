@@ -1,6 +1,17 @@
 /* Layout: Sidebar + Header + Content */
 .app-layout { display: flex; min-height: 100vh; }
 
+/* Iconify Icon Integration */
+iconify-icon { display: inline-flex; vertical-align: middle; }
+.nav-item__icon iconify-icon, .nav-group-toggle iconify-icon { font-size: 1.15rem; color: inherit; transition: color var(--transition-fast); }
+.sidebar__logo-icon iconify-icon { color: #fff; }
+.btn iconify-icon, .btn-action iconify-icon { vertical-align: -2px; }
+.header__toggle iconify-icon, .header__notification iconify-icon { color: inherit; }
+.stat-card__icon iconify-icon { color: inherit; }
+.empty-state__icon iconify-icon { color: var(--text-muted); opacity: 0.7; }
+.debt-card__icon iconify-icon { color: inherit; }
+.notification-icon iconify-icon { color: inherit; }
+
 /* === SIDEBAR === */
 .sidebar { width: var(--sidebar-width); background: var(--gradient-sidebar); border-right: 1px solid var(--border-color-light); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; transition: width var(--transition-base); overflow: hidden; }
 .sidebar.collapsed { width: var(--sidebar-collapsed); }

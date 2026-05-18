@@ -31,10 +31,10 @@ export function renderDashboard(container) {
         </div>
       </div>
       <div style="margin-top:var(--space-xl);display:flex;gap:var(--space-md);">
-        <a href="#/sales/invoices/new" class="btn btn-secondary">📄 Buat Invoice</a>
-        <a href="#/contacts" class="btn btn-secondary">👥 Tambah Mitra</a>
-        <a href="#/products" class="btn btn-secondary">📦 Tambah Produk</a>
-        <a href="#/purchases/receipts" class="btn btn-secondary">💸 Catat Biaya</a>
+        <a href="#/sales/invoices/new" class="btn btn-secondary"><iconify-icon icon="lucide:file-text" width="16" height="16"></iconify-icon> Buat Invoice</a>
+        <a href="#/contacts" class="btn btn-secondary"><iconify-icon icon="lucide:users" width="16" height="16"></iconify-icon> Tambah Mitra</a>
+        <a href="#/products" class="btn btn-secondary"><iconify-icon icon="lucide:box" width="16" height="16"></iconify-icon> Tambah Produk</a>
+        <a href="#/purchases/receipts" class="btn btn-secondary"><iconify-icon icon="lucide:wallet" width="16" height="16"></iconify-icon> Catat Biaya</a>
       </div>
     </div>
   `;
@@ -55,7 +55,7 @@ async function loadDashboardData() {
     document.getElementById('stat-cards').innerHTML = `
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
-          <span class="stat-card__icon" style="background:var(--success-bg);color:var(--success)">💰</span>
+          <span class="stat-card__icon" style="background:var(--success-bg);color:var(--success)"><iconify-icon icon="lucide:banknote" width="22" height="22"></iconify-icon></span>
         </div>
         <div class="stat-card__label">Keuangan (Profit)</div>
         <div class="stat-card__value text-success">${formatCurrency(s.net_profit)}</div>
@@ -66,7 +66,7 @@ async function loadDashboardData() {
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
-          <span class="stat-card__icon" style="background:var(--warning-bg);color:var(--warning)">⏳</span>
+          <span class="stat-card__icon" style="background:var(--warning-bg);color:var(--warning)"><iconify-icon icon="lucide:clock" width="22" height="22"></iconify-icon></span>
         </div>
         <div class="stat-card__label">Outstanding</div>
         <div class="stat-card__value text-warning">${formatCurrency(s.outstanding)}</div>
@@ -77,7 +77,7 @@ async function loadDashboardData() {
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
-          <span class="stat-card__icon" style="background:var(--danger-bg);color:var(--danger)">🔴</span>
+          <span class="stat-card__icon" style="background:var(--danger-bg);color:var(--danger)"><iconify-icon icon="lucide:alert-circle" width="22" height="22"></iconify-icon></span>
         </div>
         <div class="stat-card__label">Overdue</div>
         <div class="stat-card__value text-danger">${formatCurrency(s.overdue)}</div>
@@ -88,7 +88,7 @@ async function loadDashboardData() {
       </div>
       <div class="stat-card">
         <div class="flex items-center justify-between" style="margin-bottom:var(--space-md)">
-          <span class="stat-card__icon" style="background:var(--info-bg);color:var(--info)">📊</span>
+          <span class="stat-card__icon" style="background:var(--info-bg);color:var(--info)"><iconify-icon icon="lucide:bar-chart-3" width="22" height="22"></iconify-icon></span>
         </div>
         <div class="stat-card__label">Total Invoice</div>
         <div class="stat-card__value">${counts.total}</div>
@@ -116,7 +116,7 @@ async function loadDashboardData() {
         </tbody>
       </table>
       <div style="margin-top:var(--space-base);text-align:right"><a href="#/sales/invoices" class="auth-link">Lihat Semua →</a></div>
-    ` : '<div class="empty-state"><div class="empty-state__icon">📄</div><p class="empty-state__title">Belum ada invoice</p><a href="#/sales/invoices/new" class="btn btn-primary btn-sm">Buat Invoice Pertama</a></div>';
+    ` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:file-text" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada invoice</p><a href="#/sales/invoices/new" class="btn btn-primary btn-sm">Buat Invoice Pertama</a></div>';
 
     // Status breakdown
     document.getElementById('status-breakdown').innerHTML = `

@@ -11,13 +11,13 @@ export function renderLayout(container, activePage) {
   container.innerHTML = `
     <aside class="sidebar ${collapsed ? 'collapsed' : ''}" id="sidebar">
       <div class="sidebar__logo">
-        <div class="sidebar__logo-icon">IF</div>
+        <div class="sidebar__logo-icon"><iconify-icon icon="lucide:zap" width="20" height="20"></iconify-icon></div>
         <div class="sidebar__logo-text"><span>Invoice</span>Flow</div>
       </div>
       <nav class="sidebar__nav">
         <div class="sidebar__section-label">Menu</div>
           <a href="#/dashboard" class="nav-item ${currentPath === '#/dashboard' ? 'active' : ''}">
-            <span class="nav-item__icon">📊</span>
+            <span class="nav-item__icon"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon></span>
             <span class="nav-item__text">Dashboard</span>
           </a>
           
@@ -26,25 +26,25 @@ export function renderLayout(container, activePage) {
           <!-- Penjualan Dropdown -->
           <div class="nav-group ${currentPath.startsWith('#/sales') ? 'open active' : ''}">
             <button class="nav-group-toggle">
-              <span class="nav-item__icon">💼</span>
+              <span class="nav-item__icon"><iconify-icon icon="lucide:briefcase"></iconify-icon></span>
               <span class="nav-item__text">Penjualan</span>
-              <span class="nav-group-chevron">▼</span>
+              <span class="nav-group-chevron"><iconify-icon icon="lucide:chevron-down" width="14" height="14"></iconify-icon></span>
             </button>
             <div class="nav-group-menu">
               <a href="#/sales/orders" class="nav-item ${currentPath.startsWith('#/sales/orders') ? 'active' : ''}">
-                <span class="nav-item__icon">📝</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:clipboard-list"></iconify-icon></span>
                 <span class="nav-item__text">Order Penjualan</span>
               </a>
               <a href="#/sales/invoices" class="nav-item ${currentPath.startsWith('#/sales/invoices') ? 'active' : ''}">
-                <span class="nav-item__icon">📄</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:file-text"></iconify-icon></span>
                 <span class="nav-item__text">Invoice Penjualan</span>
               </a>
               <a href="#/sales/receipts" class="nav-item ${currentPath.startsWith('#/sales/receipts') ? 'active' : ''}">
-                <span class="nav-item__icon">🧾</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:receipt"></iconify-icon></span>
                 <span class="nav-item__text">Kuitansi Penjualan</span>
               </a>
               <a href="#/sales/debts" class="nav-item ${currentPath.startsWith('#/sales/debts') ? 'active' : ''}">
-                <span class="nav-item__icon">💳</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:credit-card"></iconify-icon></span>
                 <span class="nav-item__text">Piutang & Pengingat</span>
               </a>
             </div>
@@ -53,25 +53,25 @@ export function renderLayout(container, activePage) {
           <!-- Pembelian Dropdown -->
           <div class="nav-group ${currentPath.startsWith('#/purchases') ? 'open active' : ''}">
             <button class="nav-group-toggle">
-              <span class="nav-item__icon">🛒</span>
+              <span class="nav-item__icon"><iconify-icon icon="lucide:shopping-cart"></iconify-icon></span>
               <span class="nav-item__text">Pembelian</span>
-              <span class="nav-group-chevron">▼</span>
+              <span class="nav-group-chevron"><iconify-icon icon="lucide:chevron-down" width="14" height="14"></iconify-icon></span>
             </button>
             <div class="nav-group-menu">
               <a href="#/purchases/orders" class="nav-item ${currentPath.startsWith('#/purchases/orders') ? 'active' : ''}">
-                <span class="nav-item__icon">📦</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:package"></iconify-icon></span>
                 <span class="nav-item__text">Order Pembelian</span>
               </a>
               <a href="#/purchases/invoices" class="nav-item ${currentPath.startsWith('#/purchases/invoices') ? 'active' : ''}">
-                <span class="nav-item__icon">📥</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:file-down"></iconify-icon></span>
                 <span class="nav-item__text">Invoice Pembelian</span>
               </a>
               <a href="#/purchases/receipts" class="nav-item ${currentPath.startsWith('#/purchases/receipts') ? 'active' : ''}">
-                <span class="nav-item__icon">🧾</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:receipt"></iconify-icon></span>
                 <span class="nav-item__text">Kuitansi Pembelian</span>
               </a>
               <a href="#/purchases/debts" class="nav-item ${currentPath.startsWith('#/purchases/debts') ? 'active' : ''}">
-                <span class="nav-item__icon">💳</span>
+                <span class="nav-item__icon"><iconify-icon icon="lucide:credit-card"></iconify-icon></span>
                 <span class="nav-item__text">Manajemen Hutang</span>
               </a>
             </div>
@@ -80,28 +80,28 @@ export function renderLayout(container, activePage) {
           <div class="sidebar__divider"></div>
           
           <a href="#/contacts" class="nav-item ${currentPath.startsWith('#/contacts') ? 'active' : ''}">
-            <span class="nav-item__icon">👥</span>
+            <span class="nav-item__icon"><iconify-icon icon="lucide:users"></iconify-icon></span>
             <span class="nav-item__text">Mitra / Kontak</span>
           </a>
           <a href="#/products" class="nav-item ${currentPath.startsWith('#/products') ? 'active' : ''}">
-            <span class="nav-item__icon">📦</span>
+            <span class="nav-item__icon"><iconify-icon icon="lucide:box"></iconify-icon></span>
             <span class="nav-item__text">Produk</span>
           </a>
           <a href="#/reports" class="nav-item ${currentPath.startsWith('#/reports') ? 'active' : ''}">
-            <span class="nav-item__icon">📈</span>
+            <span class="nav-item__icon"><iconify-icon icon="lucide:trending-up"></iconify-icon></span>
             <span class="nav-item__text">Laporan</span>
           </a>
           
           <div class="sidebar__divider"></div>
           
           <a href="#/company" class="nav-item ${currentPath.startsWith('#/company') ? 'active' : ''}">
-            <span class="nav-item__icon">⚙️</span>
+            <span class="nav-item__icon"><iconify-icon icon="lucide:settings"></iconify-icon></span>
             <span class="nav-item__text">Pengaturan</span>
           </a>
         </nav>
       <div class="sidebar__footer">
         <a class="nav-item" href="#" id="logout-btn">
-          <span class="nav-item__icon">🚪</span>
+          <span class="nav-item__icon"><iconify-icon icon="lucide:log-out"></iconify-icon></span>
           <span class="nav-item__label">Keluar</span>
         </a>
       </div>
@@ -109,9 +109,9 @@ export function renderLayout(container, activePage) {
 
     <div style="flex:1;display:flex;flex-direction:column;margin-left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'};transition:margin-left var(--transition-base);" id="main-wrapper">
       <header class="header" style="left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'}">
-        <button class="header__toggle" id="sidebar-toggle">☰</button>
+        <button class="header__toggle" id="sidebar-toggle"><iconify-icon icon="lucide:menu" width="20" height="20"></iconify-icon></button>
         <div class="header__search" style="position:relative;">
-          <span class="header__search-icon">🔍</span>
+          <span class="header__search-icon"><iconify-icon icon="lucide:search" width="16" height="16"></iconify-icon></span>
           <input type="text" placeholder="Cari dokumen, invoice, kontak..." id="global-search" autocomplete="off" />
           <div class="search-dropdown" id="search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-elevated); border:1px solid var(--border-color); border-radius:var(--radius-md); box-shadow:0 8px 24px rgba(0,0,0,0.5); margin-top:0.5rem; z-index:1000; max-height:400px; overflow-y:auto;">
             <!-- Results injected here -->
@@ -119,11 +119,11 @@ export function renderLayout(container, activePage) {
         </div>
         <div class="header__actions">
           <button class="header__toggle" id="theme-btn" title="Ganti Tema">
-            ${localStorage.getItem('theme') === 'light' ? '🌙' : '☀️'}
+            <iconify-icon icon="${localStorage.getItem('theme') === 'light' ? 'lucide:moon' : 'lucide:sun'}" width="18" height="18"></iconify-icon>
           </button>
           <div class="header__notification-wrapper" style="position:relative;">
             <button class="header__notification" id="notification-btn">
-              🔔<span class="header__notification-dot" id="notification-badge" style="display:none;"></span>
+              <iconify-icon icon="lucide:bell" width="18" height="18"></iconify-icon><span class="header__notification-dot" id="notification-badge" style="display:none;"></span>
             </button>
             <div class="notification-dropdown" id="notification-dropdown">
               <div class="notification-header">
@@ -220,10 +220,13 @@ export function renderLayout(container, activePage) {
   });
 
   // Theme Toggle
-  document.getElementById('theme-btn')?.addEventListener('click', (e) => {
+  document.getElementById('theme-btn')?.addEventListener('click', () => {
     const isLight = document.body.classList.toggle('light-mode');
     localStorage.setItem('theme', isLight ? 'light' : 'dark');
-    e.target.textContent = isLight ? '🌙' : '☀️';
+    const themeBtn = document.getElementById('theme-btn');
+    if (themeBtn) {
+      themeBtn.innerHTML = `<iconify-icon icon="${isLight ? 'lucide:moon' : 'lucide:sun'}" width="18" height="18"></iconify-icon>`;
+    }
   });
 
   // Nav Group Dropdown Toggle
@@ -273,11 +276,11 @@ export function renderLayout(container, activePage) {
         } else {
           notifList.innerHTML = notifications.map(n => {
             let iconClass = 'create';
-            let iconStr = '➕';
+            let iconStr = '<iconify-icon icon="lucide:plus" width="16" height="16"></iconify-icon>';
             const actionStr = n.action.toLowerCase();
-            if (actionStr.includes('update') || actionStr.includes('changed status')) { iconClass = 'update'; iconStr = '✏️'; }
-            if (actionStr.includes('delete') || actionStr.includes('cancel')) { iconClass = 'delete'; iconStr = '🗑️'; }
-            if (actionStr.includes('payment') || actionStr.includes('receipt')) { iconClass = 'payment'; iconStr = '💰'; }
+            if (actionStr.includes('update') || actionStr.includes('changed status')) { iconClass = 'update'; iconStr = '<iconify-icon icon="lucide:pencil" width="16" height="16"></iconify-icon>'; }
+            if (actionStr.includes('delete') || actionStr.includes('cancel')) { iconClass = 'delete'; iconStr = '<iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon>'; }
+            if (actionStr.includes('payment') || actionStr.includes('receipt')) { iconClass = 'payment'; iconStr = '<iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon>'; }
 
             return `
               <div class="notification-item">
