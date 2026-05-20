@@ -7,33 +7,35 @@ export function renderLogin(container) {
       <div class="auth-brand">
         <div class="auth-brand__decor auth-brand__decor--1"></div>
         <div class="auth-brand__decor auth-brand__decor--2"></div>
-        <div class="auth-brand__logo">🧾 <span>InvoiceFlow</span></div>
+        <div class="auth-brand__logo"><iconify-icon icon="lucide:receipt" width="24" height="24" style="vertical-align:-4px;color:var(--accent-primary);margin-right:8px"></iconify-icon><span>Invoice</span>Flow</div>
         <p class="auth-brand__tagline">Platform Invoicing & Pembayaran Digital untuk UMKM Indonesia</p>
         <div class="auth-brand__features">
-          <div class="auth-brand__feature">✅ Buat invoice profesional dalam 3 menit</div>
-          <div class="auth-brand__feature">✅ Kelola pembayaran & arus kas real-time</div>
-          <div class="auth-brand__feature">✅ Laporan keuangan otomatis</div>
-          <div class="auth-brand__feature">✅ Gratis untuk UMKM</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Buat invoice profesional dalam 3 menit</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Kelola pembayaran & arus kas real-time</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Laporan keuangan otomatis</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Gratis untuk UMKM</div>
         </div>
       </div>
       <div class="auth-form-container">
         <div class="auth-form animate-slide-up">
-          <h1 class="auth-form__title">Selamat Datang 👋</h1>
+          <h1 class="auth-form__title">Selamat Datang <iconify-icon icon="lucide:smile" width="26" height="26" style="vertical-align:-4px;color:var(--accent-primary);margin-left:4px"></iconify-icon></h1>
           <p class="auth-form__subtitle">Masuk ke akun InvoiceFlow Anda</p>
           <form id="login-form">
             <div class="form-group">
               <label class="form-label">Email</label>
               <div class="input-icon-wrapper">
-                <span class="input-icon">📧</span>
+                <span class="input-icon"><iconify-icon icon="lucide:mail" width="18" height="18"></iconify-icon></span>
                 <input type="email" class="form-input" id="login-email" placeholder="nama@email.com" required value="admin@invoiceflow.id" />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Password</label>
               <div class="input-icon-wrapper">
-                <span class="input-icon">🔒</span>
+                <span class="input-icon"><iconify-icon icon="lucide:lock" width="18" height="18"></iconify-icon></span>
                 <input type="password" class="form-input" id="login-password" placeholder="Masukkan password" required value="password123" />
-                <button type="button" class="input-toggle" id="toggle-password">👁</button>
+                <button type="button" class="input-toggle" id="toggle-password" style="background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0 8px;">
+                  <iconify-icon icon="lucide:eye" width="18" height="18" id="eye-icon" style="color:var(--text-secondary)"></iconify-icon>
+                </button>
               </div>
             </div>
             <div class="auth-form__actions">
@@ -55,7 +57,14 @@ export function renderLogin(container) {
   // Toggle password
   document.getElementById('toggle-password')?.addEventListener('click', () => {
     const input = document.getElementById('login-password');
-    input.type = input.type === 'password' ? 'text' : 'password';
+    const icon = document.getElementById('eye-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.setAttribute('icon', 'lucide:eye-off');
+    } else {
+      input.type = 'password';
+      icon.setAttribute('icon', 'lucide:eye');
+    }
   });
 
   // Login form

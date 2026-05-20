@@ -314,6 +314,60 @@ const authController = {
       await User.update(req.user.id, { password_hash });
       res.json({ success: true, message: 'Password berhasil diganti!' });
     } catch (error) { next(error); }
+  },
+
+  /**
+   * Request a password reset link (forgot password).
+   */
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      const userObj = await User.User.findOne({ email });
+      if (!userObj) {
+        // Return success to avoid user enumeration, but state the mock email message
+        return res.json({ success: true, message: 'Link reset password telah dikirim ke email Anda!' });
+      }
+
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 3600000); // 1 hour expiration
+
+      userObj.reset_password_token = token;
+      userObj.reset_password_expires = expires;
+      await userObj.save();
+
+      // Return the token in development response so the client can simulate reset without real email delivery
+      res.json({
+        success: true,
+        message: 'Link reset password telah dikirim ke email Anda!',
+        dev_reset_token: token
+      });
+    } catch (error) { next(error); }
+  },
+
+  /**
+   * Reset the password using the token.
+   */
+  async resetPassword(req, res, next) {
+    try {
+      const { token, password } = req.body;
+      const userObj = await User.User.findOne({
+        reset_password_token: token,
+        reset_password_expires: { $gt: new Date() }
+      });
+
+      if (!userObj) {
+        return res.status(400).json({ success: false, message: 'Token reset password tidak valid atau sudah kadaluarsa.' });
+      }
+
+      const password_hash = await bcrypt.hash(password, 12);
+      userObj.password_hash = password_hash;
+      userObj.reset_password_token = null;
+      userObj.reset_password_expires = null;
+      await userObj.save();
+
+      res.json({ success: true, message: 'Password Anda berhasil diatur ulang. Silakan login dengan password baru!' });
+    } catch (error) { next(error); }
   }
 };
 

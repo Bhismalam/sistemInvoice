@@ -15,6 +15,7 @@ if (isLightMode) {
 // Import pages
 import { renderLogin } from './pages/Login.js';
 import { renderRegister } from './pages/Register.js';
+import { renderForgotPassword } from './pages/ForgotPassword.js';
 import { renderDashboard } from './pages/Dashboard.js';
 import { renderDocumentList } from './pages/DocumentList.js';
 import { renderDocumentCreate } from './pages/DocumentCreate.js';
@@ -33,6 +34,7 @@ const router = new Router();
 router
   .add('/login', renderLogin)
   .add('/register', renderRegister)
+  .add('/forgot-password', renderForgotPassword)
   .add('/dashboard', renderDashboard)
   // Sales routes
   .add('/sales/orders', (c) => renderDocumentList(c, { transactionType: 'sales', documentType: 'order' }))

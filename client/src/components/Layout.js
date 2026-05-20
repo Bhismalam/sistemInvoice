@@ -214,6 +214,10 @@ export function renderLayout(container, activePage) {
   // Logout
   document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
     e.preventDefault();
+    const { showConfirm } = await import('../utils/confirm.js');
+    const confirmed = await showConfirm('Apakah Anda yakin ingin keluar dari akun Anda?', 'Konfirmasi Keluar');
+    if (!confirmed) return;
+
     const { clearTokens } = await import('../utils/api.js');
     clearTokens();
     window.location.hash = '#/login';

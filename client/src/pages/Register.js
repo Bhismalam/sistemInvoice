@@ -12,17 +12,17 @@ export function renderRegister(container) {
       <div class="auth-brand">
         <div class="auth-brand__decor auth-brand__decor--1"></div>
         <div class="auth-brand__decor auth-brand__decor--2"></div>
-        <div class="auth-brand__logo">🧾 <span>InvoiceFlow</span></div>
+        <div class="auth-brand__logo"><iconify-icon icon="lucide:receipt" width="24" height="24" style="vertical-align:-4px;color:var(--accent-primary);margin-right:8px"></iconify-icon><span>Invoice</span>Flow</div>
         <p class="auth-brand__tagline">Kelola invoice & pembayaran dengan mudah</p>
         <div class="auth-brand__features">
-          <div class="auth-brand__feature">✅ Gratis untuk mulai</div>
-          <div class="auth-brand__feature">✅ Setup dalam 3 menit</div>
-          <div class="auth-brand__feature">✅ Tanpa kartu kredit</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Gratis untuk mulai</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Setup dalam 3 menit</div>
+          <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Tanpa kartu kredit</div>
         </div>
       </div>
       <div class="auth-form-container">
         <div class="auth-form animate-slide-up">
-          <h1 class="auth-form__title">Buat Akun Baru ✨</h1>
+          <h1 class="auth-form__title">Buat Akun Baru <iconify-icon icon="lucide:sparkles" width="26" height="26" style="vertical-align:-4px;color:var(--accent-primary);margin-left:4px"></iconify-icon></h1>
           <p class="auth-form__subtitle">Mulai kelola invoice bisnis Anda</p>
 
           <!-- Tab Toggle -->

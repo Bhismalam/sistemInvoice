@@ -20,6 +20,15 @@ router.post('/login', [
   body('password').notEmpty().withMessage('Password harus diisi.')
 ], validate, authController.login);
 
+router.post('/forgot-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Email tidak valid.')
+], validate, authController.forgotPassword);
+
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Token harus diisi.'),
+  body('password').isLength({ min: 8 }).withMessage('Password minimal 8 karakter.')
+], validate, authController.resetPassword);
+
 router.post('/google', authController.googleLogin);
 
 router.post('/refresh', authController.refresh);

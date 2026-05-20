@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema({
   invoice_counter: { type: Number, default: 0 },
   default_tax_percent: { type: Number, default: 11 },
   notifications_read_at: { type: Date, default: Date.now },
+  reset_password_token: { type: String, default: null },
+  reset_password_expires: { type: Date, default: null },
   refresh_tokens: [{
     token: String,
     expires_at: Date
