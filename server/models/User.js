@@ -18,6 +18,8 @@ const userSchema = new mongoose.Schema({
   notifications_read_at: { type: Date, default: Date.now },
   reset_password_token: { type: String, default: null },
   reset_password_expires: { type: Date, default: null },
+  otp_code: { type: String, default: null },
+  otp_expires: { type: Date, default: null },
   refresh_tokens: [{
     token: String,
     expires_at: Date

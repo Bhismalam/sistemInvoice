@@ -317,36 +317,71 @@ const authController = {
   },
 
   /**
-   * Request a password reset link (forgot password).
+   * Request a password reset OTP (forgot password).
    */
   async forgotPassword(req, res, next) {
     try {
       const { email } = req.body;
       const userObj = await User.User.findOne({ email });
       if (!userObj) {
-        // Return success to avoid user enumeration, but state the mock email message
-        return res.json({ success: true, message: 'Link reset password telah dikirim ke email Anda!' });
+        // Return success to avoid user enumeration
+        return res.json({ success: true, message: 'Kode OTP pemulihan telah dikirim ke email Anda!' });
       }
 
-      const crypto = require('crypto');
-      const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 3600000); // 1 hour expiration
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 900000); // 15 minutes expiration
 
-      userObj.reset_password_token = token;
-      userObj.reset_password_expires = expires;
+      userObj.otp_code = otp;
+      userObj.otp_expires = expires;
       await userObj.save();
 
-      // Return the token in development response so the client can simulate reset without real email delivery
+      // Return the OTP in development response so the client can simulate it locally
       res.json({
         success: true,
-        message: 'Link reset password telah dikirim ke email Anda!',
-        dev_reset_token: token
+        message: 'Kode OTP pemulihan telah dikirim ke email Anda!',
+        dev_otp: otp
       });
     } catch (error) { next(error); }
   },
 
   /**
-   * Reset the password using the token.
+   * Verify the 6-digit OTP and generate a temporary reset token.
+   */
+  async verifyOtp(req, res, next) {
+    try {
+      const { email, otp } = req.body;
+      const userObj = await User.User.findOne({
+        email,
+        otp_code: otp,
+        otp_expires: { $gt: new Date() }
+      });
+
+      if (!userObj) {
+        return res.status(400).json({ success: false, message: 'Kode OTP tidak valid atau sudah kadaluarsa.' });
+      }
+
+      // Generate a highly secure temporary token valid for 15 minutes
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 900000); // 15 minutes
+
+      userObj.otp_code = null;
+      userObj.otp_expires = null;
+      userObj.reset_password_token = token;
+      userObj.reset_password_expires = expires;
+      await userObj.save();
+
+      res.json({
+        success: true,
+        message: 'OTP berhasil diverifikasi!',
+        reset_token: token
+      });
+    } catch (error) { next(error); }
+  },
+
+  /**
+   * Reset the password using the temporary token.
    */
   async resetPassword(req, res, next) {
     try {
@@ -357,7 +392,7 @@ const authController = {
       });
 
       if (!userObj) {
-        return res.status(400).json({ success: false, message: 'Token reset password tidak valid atau sudah kadaluarsa.' });
+        return res.status(400).json({ success: false, message: 'Sesi reset password tidak valid atau sudah kadaluarsa.' });
       }
 
       const password_hash = await bcrypt.hash(password, 12);

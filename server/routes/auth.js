@@ -24,6 +24,11 @@ router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Email tidak valid.')
 ], validate, authController.forgotPassword);
 
+router.post('/verify-otp', [
+  body('email').isEmail().normalizeEmail().withMessage('Email tidak valid.'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('Kode OTP harus 6 digit.')
+], validate, authController.verifyOtp);
+
 router.post('/reset-password', [
   body('token').notEmpty().withMessage('Token harus diisi.'),
   body('password').isLength({ min: 8 }).withMessage('Password minimal 8 karakter.')
