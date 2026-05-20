@@ -58,14 +58,33 @@ export function renderContacts(container) {
     document.getElementById('close-modal').addEventListener('click', () => document.getElementById('contact-modal').innerHTML = '');
     document.getElementById('cancel-modal').addEventListener('click', () => document.getElementById('contact-modal').innerHTML = '');
     document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === e.currentTarget) document.getElementById('contact-modal').innerHTML = ''; });
+    let isSubmitting = false;
     document.getElementById('contact-form').addEventListener('submit', async e => {
       e.preventDefault();
+      if (isSubmitting) return;
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalHTML = submitBtn ? submitBtn.innerHTML : '';
+
+      isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Menyimpan...';
+      }
+
       try {
         await api('/contacts', { method: 'POST', body: { type: document.getElementById('c-type').value, name: document.getElementById('c-name').value, email: document.getElementById('c-email').value, phone: document.getElementById('c-phone').value, address: document.getElementById('c-address').value }});
         showToast('Kontak berhasil ditambahkan!', 'success');
         document.getElementById('contact-modal').innerHTML = '';
         load();
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) { 
+        showToast(err.message, 'error'); 
+        isSubmitting = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHTML;
+        }
+      }
     });
   }
   load();

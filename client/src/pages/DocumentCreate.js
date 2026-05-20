@@ -170,7 +170,11 @@ export function renderDocumentCreate(container, routeParams = {}) {
   document.getElementById('doc-discount')?.addEventListener('input', recalculate);
   document.getElementById('doc-tax')?.addEventListener('input', recalculate);
 
+  let isSubmitting = false;
+
   async function saveDocument(status) {
+    if (isSubmitting) return;
+
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(row => {
       const desc = row.querySelector('.item-desc')?.value || row.querySelector('.item-product')?.selectedOptions[0]?.textContent?.split(' (')[0] || '';
@@ -190,6 +194,22 @@ export function renderDocumentCreate(container, routeParams = {}) {
     const discountAmt = subtotal * (discountPct / 100);
     const taxAmt = (subtotal - discountAmt) * (taxPct / 100);
 
+    const saveDraftBtn = document.getElementById('save-draft');
+    const sendDocBtn = document.getElementById('send-document');
+
+    isSubmitting = true;
+    if (saveDraftBtn) saveDraftBtn.disabled = true;
+    if (sendDocBtn) sendDocBtn.disabled = true;
+
+    const originalDraftHTML = saveDraftBtn ? saveDraftBtn.innerHTML : '';
+    const originalSendHTML = sendDocBtn ? sendDocBtn.innerHTML : '';
+
+    if (status === 'draft' && saveDraftBtn) {
+      saveDraftBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Menyimpan...';
+    } else if (status === 'sent' && sendDocBtn) {
+      sendDocBtn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Mengirim...`;
+    }
+
     try {
       await api('/documents', { method: 'POST', body: {
         transaction_type: transactionType,
@@ -206,7 +226,18 @@ export function renderDocumentCreate(container, routeParams = {}) {
       }});
       showToast(`Dokumen berhasil ${status === 'sent' ? 'dikirim' : 'disimpan'}!`, 'success');
       window.location.hash = basePath;
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { 
+      showToast(err.message, 'error'); 
+      isSubmitting = false;
+      if (saveDraftBtn) {
+        saveDraftBtn.disabled = false;
+        saveDraftBtn.innerHTML = originalDraftHTML;
+      }
+      if (sendDocBtn) {
+        sendDocBtn.disabled = false;
+        sendDocBtn.innerHTML = originalSendHTML;
+      }
+    }
   }
 
   document.getElementById('document-form').addEventListener('submit', (e) => { e.preventDefault(); saveDocument('draft'); });

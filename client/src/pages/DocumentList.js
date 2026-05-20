@@ -125,35 +125,53 @@ export function renderDocumentList(container, routeParams = {}) {
     } catch (err) { document.getElementById('document-table').innerHTML = `<p class="text-danger">Gagal memuat: ${err.message}</p>`; }
   }
 
+  let isProcessing = false;
+
   async function updateStatus(id, status) {
+    if (isProcessing) return;
+    isProcessing = true;
     try { 
       await api(`/documents/${id}/status`, { method: 'PATCH', body: { status } }); 
       showToast('Dokumen berhasil dikirim!', 'success'); 
       loadDocuments(); 
     } catch (err) { showToast(err.message, 'error'); }
+    finally { isProcessing = false; }
   }
 
   async function processPayment(id) {
+    if (isProcessing) return;
     if (!await showConfirm('Konfirmasi pembayaran untuk dokumen ini?')) return;
+    isProcessing = true;
     try { 
       const result = await api(`/documents/${id}/pay`, { method: 'POST', body: { payment_method: 'transfer' } }); 
       showToast(result.message || 'Pembayaran berhasil! ✅', 'success'); 
       loadDocuments(); 
     } catch (err) { showToast(err.message, 'error'); }
+    finally { isProcessing = false; }
   }
 
   async function cancelDocument(id) {
+    if (isProcessing) return;
     if (!await showConfirm('Yakin ingin membatalkan? Invoice akan dihapus otomatis dalam 24 jam.')) return;
+    isProcessing = true;
     try { 
       const result = await api(`/documents/${id}/cancel`, { method: 'POST' }); 
       showToast(result.message || 'Dokumen dibatalkan', 'warning'); 
       loadDocuments(); 
     } catch (err) { showToast(err.message, 'error'); }
+    finally { isProcessing = false; }
   }
 
   async function deleteDocument(id) {
+    if (isProcessing) return;
     if (!await showConfirm('Hapus dokumen ini?')) return;
-    try { await api(`/documents/${id}`, { method: 'DELETE' }); showToast('Dokumen dihapus', 'success'); loadDocuments(); } catch (err) { showToast(err.message, 'error'); }
+    isProcessing = true;
+    try { 
+      await api(`/documents/${id}`, { method: 'DELETE' }); 
+      showToast('Dokumen dihapus', 'success'); 
+      loadDocuments(); 
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { isProcessing = false; }
   }
 
   loadDocuments();
