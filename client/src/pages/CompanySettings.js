@@ -85,7 +85,7 @@ async function loadTab(tab, page) {
             ? 'Akun Anda belum terhubung dengan perusahaan. Silakan logout dan login kembali untuk mengaktifkan fitur ini secara otomatis.'
             : err.message
         }</p>
-        ${isNotFound ? `<button class="btn btn-primary" onclick="localStorage.clear(); window.location.hash='#/login'; window.location.reload();"><iconify-icon icon="lucide:refresh-cw" width="16" height="16"></iconify-icon> Logout & Login Ulang</button>` : ''}
+        ${isNotFound ? `<button class="btn btn-primary" onclick="sessionStorage.clear(); localStorage.clear(); window.location.hash='#/login'; window.location.reload();"><iconify-icon icon="lucide:refresh-cw" width="16" height="16"></iconify-icon> Logout & Login Ulang</button>` : ''}
       </div>
     `;
   }
@@ -183,11 +183,11 @@ async function renderAccountTab(content, page) {
           phone: page.querySelector('#acc-phone').value
         }
       });
-      // Update local storage
-      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      // Update session storage
+      const stored = JSON.parse(sessionStorage.getItem('user') || '{}');
       stored.name = page.querySelector('#acc-name').value;
       stored.phone = page.querySelector('#acc-phone').value;
-      localStorage.setItem('user', JSON.stringify(stored));
+      sessionStorage.setItem('user', JSON.stringify(stored));
       showToast('Profil berhasil disimpan!', 'success');
     } catch (err) { showToast(err.message, 'error'); }
   });

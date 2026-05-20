@@ -74,8 +74,8 @@ export function renderLogin(container) {
         body: { email, password }
       });
       setTokens(res.data.accessToken, res.data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      if (res.data.company) localStorage.setItem('company', JSON.stringify(res.data.company));
+      sessionStorage.setItem('user', JSON.stringify(res.data.user));
+      if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
       showToast('Login berhasil! Selamat datang 🎉', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
@@ -100,8 +100,8 @@ export function renderLogin(container) {
               body: { token: response.credential }
             });
             setTokens(res.data.accessToken, res.data.refreshToken);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            if (res.data.company) localStorage.setItem('company', JSON.stringify(res.data.company));
+            sessionStorage.setItem('user', JSON.stringify(res.data.user));
+            if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
             showToast('Login Google berhasil! 🎉', 'success');
             window.location.hash = '#/dashboard';
           } catch (err) {

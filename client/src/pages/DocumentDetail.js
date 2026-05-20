@@ -95,7 +95,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
           <div style="background:var(--bg-primary);border-radius:var(--radius-md);padding:var(--space-2xl)">
             <div class="flex justify-between" style="margin-bottom:var(--space-2xl)">
               <div><h2 style="font-size:1.5rem;font-weight:700">${typeTitle.toUpperCase()}</h2><p class="text-muted">${doc.document_number}</p></div>
-              <div style="text-align:right"><p style="font-weight:600">${JSON.parse(localStorage.getItem('user') || '{}').business_name || 'InvoiceFlow'}</p></div>
+              <div style="text-align:right"><p style="font-weight:600">${JSON.parse(sessionStorage.getItem('user') || '{}').business_name || 'InvoiceFlow'}</p></div>
             </div>
             <div class="grid-2" style="margin-bottom:var(--space-xl)">
               <div><p class="form-label">Kepada</p><p style="font-weight:600">${doc.contact_name || '-'}</p><p class="text-muted" style="font-size:0.85rem">${doc.contact_email || ''}</p></div>

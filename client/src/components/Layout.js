@@ -3,8 +3,8 @@ import { getInitials } from '../utils/format.js';
 // The menu structure is now hardcoded below since it has categories
 
 export function renderLayout(container, activePage) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const company = JSON.parse(localStorage.getItem('company') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const company = JSON.parse(sessionStorage.getItem('company') || '{}');
   const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
   const currentPath = window.location.hash;
 

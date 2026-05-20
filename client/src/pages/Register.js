@@ -160,9 +160,9 @@ export function renderRegister(container) {
         body
       });
       setTokens(res.data.accessToken, res.data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+      sessionStorage.setItem('user', JSON.stringify(res.data.user));
       if (res.data.company) {
-        localStorage.setItem('company', JSON.stringify(res.data.company));
+        sessionStorage.setItem('company', JSON.stringify(res.data.company));
       }
       showToast(res.message || 'Registrasi berhasil! 🎉', 'success');
       window.location.hash = '#/dashboard';

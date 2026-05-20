@@ -35,7 +35,7 @@ export class Router {
     // Check auth
     const publicRoutes = ['/login', '/register', '/forgot-password', '/pay'];
     const isPublic = publicRoutes.some(r => firstSegment.startsWith(r));
-    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const isLoggedIn = !!sessionStorage.getItem('accessToken');
 
     if (!isPublic && !isLoggedIn) {
       window.location.hash = '#/login';

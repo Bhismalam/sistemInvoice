@@ -4,22 +4,23 @@ if (BASE_URL.endsWith('/')) {
   BASE_URL = BASE_URL.slice(0, -1);
 }
 
-let accessToken = localStorage.getItem('accessToken') || '';
-let refreshToken = localStorage.getItem('refreshToken') || '';
+let accessToken = sessionStorage.getItem('accessToken') || '';
+let refreshToken = sessionStorage.getItem('refreshToken') || '';
 
 export function setTokens(access, refresh) {
   accessToken = access;
   refreshToken = refresh;
-  localStorage.setItem('accessToken', access);
-  localStorage.setItem('refreshToken', refresh);
+  sessionStorage.setItem('accessToken', access);
+  sessionStorage.setItem('refreshToken', refresh);
 }
 
 export function clearTokens() {
   accessToken = '';
   refreshToken = '';
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('user');
+  sessionStorage.removeItem('company');
 }
 
 export function getAccessToken() { return accessToken; }
@@ -34,7 +35,7 @@ async function refreshAccessToken() {
     if (!res.ok) throw new Error('Refresh failed');
     const data = await res.json();
     accessToken = data.data.accessToken;
-    localStorage.setItem('accessToken', accessToken);
+    sessionStorage.setItem('accessToken', accessToken);
     return true;
   } catch {
     clearTokens();
