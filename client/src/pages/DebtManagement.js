@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, formatDate } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderDebtManagement(container, routeParams = {}) {
   const page = renderLayout(container, 'debt-management');
@@ -182,7 +183,7 @@ export function renderDebtManagement(container, routeParams = {}) {
       // Quick pay handlers
       el.querySelectorAll('.quick-pay').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Konfirmasi pembayaran?')) return;
+          if (!await showConfirm('Konfirmasi pembayaran?')) return;
           try {
             btn.innerHTML = '<span class="spinner"></span>';
             btn.disabled = true;

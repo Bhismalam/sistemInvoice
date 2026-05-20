@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderProducts(container) {
   const page = renderLayout(container, 'products');
@@ -26,7 +27,7 @@ export function renderProducts(container) {
         <td style="text-align:right"><span style="color:${p.stock < 10 ? 'var(--danger)' : 'var(--text-primary)'}">${p.stock}</span></td>
         <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td></tr>`).join('')}
       </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:box" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada produk</p></div>';
-      document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(confirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
+      document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(await showConfirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
     } catch(err) { document.getElementById('product-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }
 

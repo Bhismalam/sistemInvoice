@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, getInitials } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderContacts(container) {
   const page = renderLayout(container, 'contacts');
@@ -37,7 +38,7 @@ export function renderContacts(container) {
           <div style="text-align:right;font-size:0.85rem"><div style="font-weight:600">${formatCurrency(c.stats?.total_revenue || 0)}</div><div class="text-muted">${c.stats?.invoice_count || 0} invoice</div></div>
           <div style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm edit-c" data-id="${c.id}"><iconify-icon icon="lucide:pencil" width="16" height="16"></iconify-icon></button><button class="btn btn-ghost btn-sm del-c" data-id="${c.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></div>
         </div>`).join('') : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:users" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada mitra</p></div>';
-      list.querySelectorAll('.del-c').forEach(b => b.addEventListener('click', async () => { if (confirm('Hapus kontak?')) { await api(`/contacts/${b.dataset.id}`, {method:'DELETE'}); showToast('Kontak dihapus','success'); load(); }}));
+      list.querySelectorAll('.del-c').forEach(b => b.addEventListener('click', async () => { if (await showConfirm('Hapus kontak?')) { await api(`/contacts/${b.dataset.id}`, {method:'DELETE'}); showToast('Kontak dihapus','success'); load(); }}));
     } catch (err) { document.getElementById('contact-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }
 

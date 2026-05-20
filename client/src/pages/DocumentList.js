@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, formatDate, getStatusLabel } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderDocumentList(container, routeParams = {}) {
   const transactionType = routeParams.transactionType || 'sales'; // 'sales' or 'purchase'
@@ -133,7 +134,7 @@ export function renderDocumentList(container, routeParams = {}) {
   }
 
   async function processPayment(id) {
-    if (!confirm('Konfirmasi pembayaran untuk dokumen ini?')) return;
+    if (!await showConfirm('Konfirmasi pembayaran untuk dokumen ini?')) return;
     try { 
       const result = await api(`/documents/${id}/pay`, { method: 'POST', body: { payment_method: 'transfer' } }); 
       showToast(result.message || 'Pembayaran berhasil! ✅', 'success'); 
@@ -142,7 +143,7 @@ export function renderDocumentList(container, routeParams = {}) {
   }
 
   async function cancelDocument(id) {
-    if (!confirm('Yakin ingin membatalkan? Invoice akan dihapus otomatis dalam 24 jam.')) return;
+    if (!await showConfirm('Yakin ingin membatalkan? Invoice akan dihapus otomatis dalam 24 jam.')) return;
     try { 
       const result = await api(`/documents/${id}/cancel`, { method: 'POST' }); 
       showToast(result.message || 'Dokumen dibatalkan', 'warning'); 
@@ -151,7 +152,7 @@ export function renderDocumentList(container, routeParams = {}) {
   }
 
   async function deleteDocument(id) {
-    if (!confirm('Hapus dokumen ini?')) return;
+    if (!await showConfirm('Hapus dokumen ini?')) return;
     try { await api(`/documents/${id}`, { method: 'DELETE' }); showToast('Dokumen dihapus', 'success'); loadDocuments(); } catch (err) { showToast(err.message, 'error'); }
   }
 

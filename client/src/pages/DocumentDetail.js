@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, formatDate, getStatusLabel } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderDocumentDetail(container, routeParams = {}) {
   const transactionType = routeParams.transactionType || 'sales';
@@ -261,7 +262,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
 
     // Cancel button
     document.getElementById('btn-cancel')?.addEventListener('click', async () => {
-      if (!confirm('Yakin ingin membatalkan pembayaran ini? Invoice akan dihapus otomatis dalam 24 jam.')) return;
+      if (!await showConfirm('Yakin ingin membatalkan pembayaran ini? Invoice akan dihapus otomatis dalam 24 jam.')) return;
       const btn = document.getElementById('btn-cancel');
       btn.innerHTML = '<span class="spinner"></span> Membatalkan...';
       btn.disabled = true;

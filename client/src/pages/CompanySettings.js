@@ -1,5 +1,6 @@
 import { api } from '../utils/api.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 import { renderLayout } from '../components/Layout.js';
 
 export async function renderCompanySettings(container) {
@@ -387,7 +388,7 @@ async function renderMembersTab(content, page) {
 
   page.querySelectorAll('.btn-remove-member').forEach(btn => {
     btn.onclick = async () => {
-      if (!confirm('Hapus anggota ini?')) return;
+      if (!await showConfirm('Hapus anggota ini?')) return;
       try {
         await api(`/company/members/${btn.dataset.memberId}`, { method: 'DELETE' });
         showToast('Anggota dihapus.', 'success');
@@ -605,7 +606,7 @@ function setupRoleEvents(page, roles, allPerms) {
   // Delete role
   page.querySelectorAll('.btn-delete-role').forEach(btn => {
     btn.onclick = async () => {
-      if (!confirm('Hapus role ini?')) return;
+      if (!await showConfirm('Hapus role ini?')) return;
       try {
         await api(`/company/members/roles/${btn.dataset.roleId}`, { method: 'DELETE' }); // Adjusted path if needed
         showToast('Role berhasil dihapus.', 'success');

@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency, formatDate } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderReceiptList(container, routeParams = {}) {
   const transactionType = routeParams.transactionType || 'sales'; // 'sales' or 'purchase'
@@ -55,7 +56,7 @@ export function renderReceiptList(container, routeParams = {}) {
       </table>` : `<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:receipt" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada kuitansi</p></div>`;
       
       document.querySelectorAll('.del-r').forEach(b => b.addEventListener('click', async () => { 
-        if(confirm('Hapus kuitansi ini?')) { 
+        if(await showConfirm('Hapus kuitansi ini?')) { 
           await api(`/receipts/${b.dataset.id}`,{method:'DELETE'}); 
           showToast('Dihapus','success'); 
           load(); 
