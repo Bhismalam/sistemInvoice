@@ -61,14 +61,18 @@ const Document = {
       const { Product } = require('./Product');
       for (const item of data.items) {
         if (item.product_id) {
+          const prodQuery = data.company_id 
+            ? { _id: item.product_id, company_id: data.company_id }
+            : { _id: item.product_id, user_id: data.user_id };
+
           if (data.transaction_type === 'sales') {
             await Product.findOneAndUpdate(
-              { _id: item.product_id, user_id: data.user_id },
+              prodQuery,
               { $inc: { stock: -item.quantity } }
             );
           } else if (data.transaction_type === 'purchase') {
             await Product.findOneAndUpdate(
-              { _id: item.product_id, user_id: data.user_id },
+              prodQuery,
               { $inc: { stock: item.quantity } }
             );
           }
@@ -78,11 +82,12 @@ const Document = {
       await Product.updateMany({ stock: { $lt: 0 } }, { stock: 0 });
     }
 
-    return this.findById(doc._id, data.user_id);
+    return this.findById(doc._id, data.user_id, data.company_id);
   },
 
-  async findById(id, userId) {
-    const doc = await DocumentModelDB.findOne({ _id: id, user_id: userId })
+  async findById(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const doc = await DocumentModelDB.findOne(query)
       .populate('contact_id')
       .populate('items.product_id', 'name unit');
     
@@ -135,8 +140,8 @@ const Document = {
     return result;
   },
 
-  async findAll(userId, { transaction_type, document_type, status, search, sort, order, page, limit } = {}) {
-    let query = { user_id: userId };
+  async findAll(userId, { transaction_type, document_type, status, search, sort, order, page, limit } = {}, companyId = null) {
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
     if (transaction_type) query.transaction_type = transaction_type;
     if (document_type) query.document_type = document_type;
     if (status && status !== 'all') query.status = status;
@@ -146,7 +151,8 @@ const Document = {
     // For simplicity, we'll search document_number and if search is provided, we fetch matching contacts first.
     if (search) {
       const { Contact } = require('./Contact');
-      const contacts = await Contact.find({ user_id: userId, name: new RegExp(search, 'i') }).select('_id');
+      const contactQuery = companyId ? { company_id: companyId, name: new RegExp(search, 'i') } : { user_id: userId, name: new RegExp(search, 'i') };
+      const contacts = await Contact.find(contactQuery).select('_id');
       const contactIds = contacts.map(c => c._id);
       
       query.$or = [
@@ -181,7 +187,7 @@ const Document = {
     return { data, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   },
 
-  async update(id, userId, data) {
+  async update(id, userId, data, companyId = null) {
     if (data.items) {
       data.items.forEach(item => {
         item.total = item.quantity * item.unit_price;
@@ -189,24 +195,29 @@ const Document = {
     }
     if (data.status === 'paid') data.paid_at = new Date();
     
-    await DocumentModelDB.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
-    return this.findById(id, userId);
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    await DocumentModelDB.findOneAndUpdate(query, data, { new: true });
+    return this.findById(id, userId, companyId);
   },
 
-  async updateStatus(id, userId, status) {
+  async updateStatus(id, userId, status, companyId = null) {
     const update = { status };
     if (status === 'paid') update.paid_at = new Date();
-    await DocumentModelDB.findOneAndUpdate({ _id: id, user_id: userId }, update);
-    return this.findById(id, userId);
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    await DocumentModelDB.findOneAndUpdate(query, update);
+    return this.findById(id, userId, companyId);
   },
 
-  async delete(id, userId) {
-    const res = await DocumentModelDB.deleteOne({ _id: id, user_id: userId });
+  async delete(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const res = await DocumentModelDB.deleteOne(query);
     return { changes: res.deletedCount };
   },
 
-  async getStatusCounts(userId, transaction_type, document_type) {
-    let match = { user_id: new mongoose.Types.ObjectId(userId) };
+  async getStatusCounts(userId, transaction_type, document_type, companyId = null) {
+    let match = companyId
+      ? { company_id: new mongoose.Types.ObjectId(companyId) }
+      : { user_id: new mongoose.Types.ObjectId(userId) };
     if (transaction_type) match.transaction_type = transaction_type;
     if (document_type) match.document_type = document_type;
 
@@ -229,12 +240,19 @@ const Document = {
     return stats;
   },
 
-  async search(userId, keyword) {
+  async search(userId, keyword, companyId = null) {
     const { Contact } = require('./Contact');
-    const contacts = await Contact.find({ user_id: userId, name: new RegExp(keyword, 'i') }).select('_id');
+    const contactQuery = companyId ? { company_id: companyId, name: new RegExp(keyword, 'i') } : { user_id: userId, name: new RegExp(keyword, 'i') };
+    const contacts = await Contact.find(contactQuery).select('_id');
     const contactIds = contacts.map(c => c._id);
     
-    const query = {
+    const query = companyId ? {
+      company_id: companyId,
+      $or: [
+        { document_number: new RegExp(keyword, 'i') },
+        { contact_id: { $in: contactIds } }
+      ]
+    } : {
       user_id: userId,
       $or: [
         { document_number: new RegExp(keyword, 'i') },
@@ -262,15 +280,16 @@ const Document = {
     });
   },
 
-  async cancelDocument(id, userId) {
+  async cancelDocument(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
     await DocumentModelDB.findOneAndUpdate(
-      { _id: id, user_id: userId },
+      query,
       { status: 'cancelled', cancelled_at: new Date() }
     );
-    return this.findById(id, userId);
+    return this.findById(id, userId, companyId);
   },
 
-  async updatePaymentStatus(id, userId, paymentStatus) {
+  async updatePaymentStatus(id, userId, paymentStatus, companyId = null) {
     const update = { status: paymentStatus };
     if (paymentStatus === 'paid') {
       update.paid_at = new Date();
@@ -280,8 +299,9 @@ const Document = {
     } else {
       update.cancelled_at = null;
     }
-    await DocumentModelDB.findOneAndUpdate({ _id: id, user_id: userId }, update);
-    return this.findById(id, userId);
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    await DocumentModelDB.findOneAndUpdate(query, update);
+    return this.findById(id, userId, companyId);
   },
 
   async cleanupCancelledDocuments() {
@@ -305,15 +325,16 @@ const Document = {
     return res.modifiedCount;
   },
 
-  async getPaymentTracker(id, userId) {
-    const doc = await this.findById(id, userId);
+  async getPaymentTracker(id, userId, companyId = null) {
+    const doc = await this.findById(id, userId, companyId);
     if (!doc) return null;
 
     const { Receipt } = require('./Receipt');
     const receipts = await Receipt.find({ document_id: id }).sort({ created_at: -1 });
 
     const { PaymentReminder } = require('./PaymentReminder');
-    const reminders = await PaymentReminder.find({ document_id: id, user_id: userId }).sort({ reminder_date: 1 });
+    const reminderQuery = companyId ? { document_id: id, company_id: companyId } : { document_id: id, user_id: userId };
+    const reminders = await PaymentReminder.find(reminderQuery).sort({ reminder_date: 1 });
 
     const totalPaid = receipts.reduce((sum, r) => sum + r.amount, 0);
     const remaining = doc.total - totalPaid;

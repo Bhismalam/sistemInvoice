@@ -17,18 +17,28 @@ activityLogSchema.set('toObject', { virtuals: true });
 const ActivityLog = mongoose.model('ActivityLog', activityLogSchema);
 
 const ActivityLogModel = {
-  async create({ user_id, document_id, action, details }) {
-    const log = new ActivityLog({ user_id, document_id, action, details });
+  async create({ user_id, company_id = null, document_id, action, details }) {
+    if (!company_id && user_id) {
+      try {
+        const { User } = require('./User');
+        const user = await User.findById(user_id);
+        if (user) company_id = user.company_id || null;
+      } catch (err) {
+        // Fallback silently if user query fails
+      }
+    }
+    const log = new ActivityLog({ user_id, company_id, document_id, action, details });
     await log.save();
     return log;
   },
 
-  async log(user_id, document_id, action, details = '') {
-    return this.create({ user_id, document_id, action, details });
+  async log(user_id, document_id, action, details = '', company_id = null) {
+    return this.create({ user_id, company_id, document_id, action, details });
   },
 
-  async findAll(userId, limit = 20) {
-    return ActivityLog.find({ user_id: userId })
+  async findAll(userId, limit = 20, companyId = null) {
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    return ActivityLog.find(query)
       .sort({ created_at: -1, _id: -1 })
       .limit(limit)
       .populate({
@@ -47,11 +57,13 @@ const ActivityLogModel = {
       }));
   },
 
-  async countUnread(userId) {
+  async countUnread(userId, companyId = null) {
     const { User } = require('./User');
     const user = await User.findById(userId);
     const since = user && user.notifications_read_at ? user.notifications_read_at : new Date(0);
-    return ActivityLog.countDocuments({ user_id: userId, created_at: { $gt: since } });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.created_at = { $gt: since };
+    return ActivityLog.countDocuments(query);
   }
 };
 

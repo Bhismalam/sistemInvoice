@@ -25,8 +25,8 @@ const ProductModel = {
     await prod.save();
     return prod;
   },
-  async findAll(userId, filters = {}) {
-    let query = { user_id: userId };
+  async findAll(userId, filters = {}, companyId = null) {
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
     if (filters.search) {
       query.$or = [
         { name: new RegExp(filters.search, 'i') },
@@ -51,14 +51,17 @@ const ProductModel = {
     
     return { data, total, page, totalPages: Math.ceil(total / limit) };
   },
-  async findById(id, userId) {
-    return Product.findOne({ _id: id, user_id: userId });
+  async findById(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    return Product.findOne(query);
   },
-  async update(id, userId, data) {
-    return Product.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
+  async update(id, userId, data, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    return Product.findOneAndUpdate(query, data, { new: true });
   },
-  async delete(id, userId) {
-    const res = await Product.deleteOne({ _id: id, user_id: userId });
+  async delete(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const res = await Product.deleteOne(query);
     return { changes: res.deletedCount };
   }
 };

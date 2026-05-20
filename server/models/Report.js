@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 require('./Document'); // Ensure schema is registered
 
 const Report = {
-  async getDashboardStats(userId) {
+  async getDashboardStats(userId, companyId = null) {
     const Document = mongoose.model('Document');
     
-    const docs = await Document.find({
-      user_id: userId,
-      document_type: 'invoice',
-      transaction_type: { $in: ['sales', 'purchase'] }
-    });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.document_type = 'invoice';
+    query.transaction_type = { $in: ['sales', 'purchase'] };
+
+    const docs = await Document.find(query);
 
     const stats = {
       total_revenue: 0,
@@ -52,18 +52,18 @@ const Report = {
     return stats;
   },
 
-  async getRevenueChart(userId, months = 6) {
+  async getRevenueChart(userId, months = 6, companyId = null) {
     const Document = mongoose.model('Document');
     const pastDate = new Date();
     pastDate.setMonth(pastDate.getMonth() - months);
     
-    const docs = await Document.find({
-      user_id: userId,
-      transaction_type: 'sales',
-      document_type: 'invoice',
-      status: 'paid',
-      paid_at: { $gte: pastDate }
-    });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.transaction_type = 'sales';
+    query.document_type = 'invoice';
+    query.status = 'paid';
+    query.paid_at = { $gte: pastDate };
+
+    const docs = await Document.find(query);
 
     const grouped = {};
     docs.forEach(d => {
@@ -79,14 +79,15 @@ const Report = {
     }));
   },
 
-  async getAgingReport(userId) {
+  async getAgingReport(userId, companyId = null) {
     const Document = mongoose.model('Document');
-    const docs = await Document.find({
-      user_id: userId,
-      transaction_type: 'sales',
-      document_type: 'invoice',
-      status: { $in: ['sent', 'overdue'] }
-    });
+    
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.transaction_type = 'sales';
+    query.document_type = 'invoice';
+    query.status = { $in: ['sent', 'overdue'] };
+
+    const docs = await Document.find(query);
 
     const ranges = [
       { label: '0-30 hari', min: 0, max: 30, count: 0, amount: 0 },
@@ -113,15 +114,15 @@ const Report = {
     return ranges;
   },
 
-  async getProfitLoss(userId, startDate, endDate) {
+  async getProfitLoss(userId, startDate, endDate, companyId = null) {
     const Document = mongoose.model('Document');
     
-    const docs = await Document.find({
-      user_id: userId,
-      document_type: 'invoice',
-      status: 'paid',
-      paid_at: { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59Z') }
-    });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.document_type = 'invoice';
+    query.status = 'paid';
+    query.paid_at = { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59Z') };
+
+    const docs = await Document.find(query);
 
     let income = 0;
     let expenses = 0;
@@ -138,17 +139,17 @@ const Report = {
     };
   },
 
-  async getCashflow(userId, months = 6) {
+  async getCashflow(userId, months = 6, companyId = null) {
     const Document = mongoose.model('Document');
     const pastDate = new Date();
     pastDate.setMonth(pastDate.getMonth() - months);
     
-    const docs = await Document.find({
-      user_id: userId,
-      document_type: 'invoice',
-      status: 'paid',
-      paid_at: { $gte: pastDate }
-    });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.document_type = 'invoice';
+    query.status = 'paid';
+    query.paid_at = { $gte: pastDate };
+
+    const docs = await Document.find(query);
 
     const cashIn = {};
     const cashOut = {};
@@ -174,13 +175,14 @@ const Report = {
     };
   },
 
-  async getRecentInvoices(userId, limit = 5) {
+  async getRecentInvoices(userId, limit = 5, companyId = null) {
     const Document = mongoose.model('Document');
-    const docs = await Document.find({
-      user_id: userId,
-      transaction_type: 'sales',
-      document_type: 'invoice'
-    }).populate('contact_id').sort({ created_at: -1 }).limit(limit);
+    
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.transaction_type = 'sales';
+    query.document_type = 'invoice';
+
+    const docs = await Document.find(query).populate('contact_id').sort({ created_at: -1 }).limit(limit);
 
     return docs.map(doc => {
       const d = doc.toObject();

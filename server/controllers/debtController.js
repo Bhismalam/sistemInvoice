@@ -6,7 +6,7 @@ const debtController = {
   // Get debt summary (hutang & piutang)
   async getSummary(req, res, next) {
     try {
-      const debts = await PaymentReminder.getDebtSummary(req.user.id);
+      const debts = await PaymentReminder.getDebtSummary(req.user.id, req.user.company_id);
       res.json({ success: true, data: debts });
     } catch (error) { next(error); }
   },
@@ -15,7 +15,7 @@ const debtController = {
   async getReminders(req, res, next) {
     try {
       const { transaction_type, status, page, limit } = req.query;
-      const result = await PaymentReminder.findAll(req.user.id, { transaction_type, status, page, limit });
+      const result = await PaymentReminder.findAll(req.user.id, { transaction_type, status, page, limit }, req.user.company_id);
       res.json({ success: true, ...result });
     } catch (error) { next(error); }
   },
@@ -24,7 +24,7 @@ const debtController = {
   async getUpcomingReminders(req, res, next) {
     try {
       const days = parseInt(req.query.days) || 7;
-      const reminders = await PaymentReminder.getUpcoming(req.user.id, days);
+      const reminders = await PaymentReminder.getUpcoming(req.user.id, days, req.user.company_id);
       res.json({ success: true, data: reminders });
     } catch (error) { next(error); }
   },
@@ -35,11 +35,12 @@ const debtController = {
       const { document_id, reminder_date, reminder_type, days_offset, message } = req.body;
       
       // Validate document exists
-      const doc = await Document.findById(document_id, req.user.id);
+      const doc = await Document.findById(document_id, req.user.id, req.user.company_id);
       if (!doc) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       
       const reminder = await PaymentReminder.create({
         user_id: req.user.id,
+        company_id: req.user.company_id || null,
         document_id,
         reminder_date,
         reminder_type: reminder_type || 'custom',
@@ -55,7 +56,7 @@ const debtController = {
   // Mark reminder as read
   async markRead(req, res, next) {
     try {
-      await PaymentReminder.markRead(req.params.id, req.user.id);
+      await PaymentReminder.markAsRead(req.params.id, req.user.id, req.user.company_id);
       res.json({ success: true, message: 'Pengingat ditandai telah dibaca.' });
     } catch (error) { next(error); }
   },
@@ -63,7 +64,7 @@ const debtController = {
   // Delete reminder
   async deleteReminder(req, res, next) {
     try {
-      const result = await PaymentReminder.delete(req.params.id, req.user.id);
+      const result = await PaymentReminder.delete(req.params.id, req.user.id, req.user.company_id);
       if (result.changes === 0) return res.status(404).json({ success: false, message: 'Pengingat tidak ditemukan.' });
       res.json({ success: true, message: 'Pengingat berhasil dihapus.' });
     } catch (error) { next(error); }
@@ -72,7 +73,7 @@ const debtController = {
   // Get payment tracker for a specific document
   async getTracker(req, res, next) {
     try {
-      const tracker = await Document.getPaymentTracker(req.params.documentId, req.user.id);
+      const tracker = await Document.getPaymentTracker(req.params.documentId, req.user.id, req.user.company_id);
       if (!tracker) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       res.json({ success: true, data: tracker });
     } catch (error) { next(error); }

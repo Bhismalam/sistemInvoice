@@ -30,8 +30,8 @@ const PaymentReminder = {
     return reminder;
   },
 
-  async findAll(userId, { document_id, is_sent, is_read, sort, order, page, limit } = {}) {
-    let query = { user_id: userId };
+  async findAll(userId, { document_id, is_sent, is_read, sort, order, page, limit } = {}, companyId = null) {
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
     if (document_id) query.document_id = document_id;
     if (is_sent !== undefined) query.is_sent = is_sent === 'true' || is_sent === true;
     if (is_read !== undefined) query.is_read = is_read === 'true' || is_read === true;
@@ -64,28 +64,32 @@ const PaymentReminder = {
     return { data, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   },
 
-  async findById(id, userId) {
-    const r = await PaymentReminderDB.findOne({ _id: id, user_id: userId }).populate('document_id');
+  async findById(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const r = await PaymentReminderDB.findOne(query).populate('document_id');
     if (!r) return null;
     return r.toObject();
   },
 
-  async update(id, userId, data) {
-    return PaymentReminderDB.findOneAndUpdate({ _id: id, user_id: userId }, data, { new: true });
+  async update(id, userId, data, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    return PaymentReminderDB.findOneAndUpdate(query, data, { new: true });
   },
 
-  async delete(id, userId) {
-    const res = await PaymentReminderDB.deleteOne({ _id: id, user_id: userId });
+  async delete(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const res = await PaymentReminderDB.deleteOne(query);
     return { changes: res.deletedCount };
   },
 
-  async markAsRead(id, userId) {
-    return PaymentReminderDB.findOneAndUpdate({ _id: id, user_id: userId }, { is_read: true });
+  async markAsRead(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    return PaymentReminderDB.findOneAndUpdate(query, { is_read: true });
   },
 
-  async autoGenerateReminders(userId, documentId) {
+  async autoGenerateReminders(userId, documentId, companyId = null) {
     const Document = require('./Document');
-    const doc = await Document.findById(documentId, userId);
+    const doc = await Document.findById(documentId, userId, companyId);
     if (!doc || doc.document_type !== 'invoice') return;
 
     // Delete existing ones
@@ -103,6 +107,7 @@ const PaymentReminder = {
     // On due date
     reminders.push({
       user_id: userId,
+      company_id: companyId || null,
       document_id: documentId,
       reminder_date: dueDate,
       reminder_type: 'on_due',
@@ -116,6 +121,7 @@ const PaymentReminder = {
       beforeDate.setDate(beforeDate.getDate() - 3);
       reminders.push({
         user_id: userId,
+        company_id: companyId || null,
         document_id: documentId,
         reminder_date: beforeDate,
         reminder_type: 'before_due',
@@ -129,6 +135,7 @@ const PaymentReminder = {
     afterDate.setDate(afterDate.getDate() + 3);
     reminders.push({
       user_id: userId,
+      company_id: companyId || null,
       document_id: documentId,
       reminder_date: afterDate,
       reminder_type: 'after_due',
@@ -177,31 +184,31 @@ const PaymentReminder = {
 
     return processedCount;
   },
-  async getUpcoming(userId, days) {
+  async getUpcoming(userId, days, companyId = null) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const futureDate = new Date(today);
     futureDate.setDate(futureDate.getDate() + days);
 
-    const reminders = await PaymentReminderDB.find({
-      user_id: userId,
-      is_sent: false,
-      reminder_date: { $gte: today, $lte: futureDate }
-    }).populate('document_id').sort({ reminder_date: 1 });
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.is_sent = false;
+    query.reminder_date = { $gte: today, $lte: futureDate };
+
+    const reminders = await PaymentReminderDB.find(query).populate('document_id').sort({ reminder_date: 1 });
 
     return reminders.map(r => r.toObject());
   },
 
-  async getDebtSummary(userId) {
+  async getDebtSummary(userId, companyId = null) {
     const mongoose = require('mongoose');
     require('./Document'); // Ensure schema is registered
     const DocumentModel = mongoose.model('Document');
     
-    const docs = await DocumentModel.find({
-      user_id: userId,
-      document_type: 'invoice',
-      status: { $in: ['sent', 'overdue'] }
-    }).populate('contact_id');
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
+    query.document_type = 'invoice';
+    query.status = { $in: ['sent', 'overdue'] };
+
+    const docs = await DocumentModel.find(query).populate('contact_id');
 
     const summary = {
       sales: { total_amount: 0, overdue_amount: 0, overdue: [], upcoming: [] },

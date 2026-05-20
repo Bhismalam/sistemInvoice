@@ -27,7 +27,10 @@ const ReceiptModel = {
     // Auto update document status if paid in full
     const mongoose = require('mongoose');
     const DocumentModel = mongoose.model('Document');
-    const doc = await DocumentModel.findOne({ _id: data.document_id, user_id: data.user_id });
+    const docQuery = data.company_id 
+      ? { _id: data.document_id, company_id: data.company_id }
+      : { _id: data.document_id, user_id: data.user_id };
+    const doc = await DocumentModel.findOne(docQuery);
     if (doc) {
       const allReceipts = await Receipt.find({ document_id: doc._id });
       const totalPaid = allReceipts.reduce((sum, r) => sum + r.amount, 0);
@@ -41,8 +44,8 @@ const ReceiptModel = {
     return receipt;
   },
 
-  async findAll(userId, filters = {}) {
-    let query = { user_id: userId };
+  async findAll(userId, filters = {}, companyId = null) {
+    let query = companyId ? { company_id: companyId } : { user_id: userId };
     if (filters.document_id) query.document_id = filters.document_id;
     if (filters.search) {
       query.receipt_number = new RegExp(filters.search, 'i');
@@ -90,8 +93,9 @@ const ReceiptModel = {
     return { data, total, page, totalPages: Math.ceil(total / limit) };
   },
 
-  async findById(id, userId) {
-    const r = await Receipt.findOne({ _id: id, user_id: userId }).populate({
+  async findById(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const r = await Receipt.findOne(query).populate({
       path: 'document_id',
       populate: { path: 'contact_id', select: 'name email' }
     });
@@ -108,8 +112,9 @@ const ReceiptModel = {
     };
   },
 
-  async delete(id, userId) {
-    const res = await Receipt.deleteOne({ _id: id, user_id: userId });
+  async delete(id, userId, companyId = null) {
+    let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const res = await Receipt.deleteOne(query);
     return { changes: res.deletedCount };
   }
 };

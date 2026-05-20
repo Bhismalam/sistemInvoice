@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const documentController = {
   async create(req, res, next) {
     try {
-      const data = { ...req.body, user_id: req.user.id };
+      const data = { ...req.body, user_id: req.user.id, company_id: req.user.company_id || null };
       
       // Auto generate document number if not provided
       if (!data.document_number) {
@@ -42,14 +42,14 @@ const documentController = {
   async getAll(req, res, next) {
     try {
       const { transaction_type, document_type, status, search, sort, order, page, limit } = req.query;
-      const result = await Document.findAll(req.user.id, { transaction_type, document_type, status, search, sort, order, page, limit });
+      const result = await Document.findAll(req.user.id, { transaction_type, document_type, status, search, sort, order, page, limit }, req.user.company_id);
       res.json({ success: true, ...result });
     } catch (error) { next(error); }
   },
 
   async getById(req, res, next) {
     try {
-      const doc = await Document.findById(req.params.id, req.user.id);
+      const doc = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       if (!doc) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       res.json({ success: true, data: doc });
     } catch (error) { next(error); }
@@ -87,14 +87,14 @@ const documentController = {
 
   async update(req, res, next) {
     try {
-      const existing = await Document.findById(req.params.id, req.user.id);
+      const existing = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       
       if (existing.status === 'paid' && req.body.status !== 'paid') {
         return res.status(400).json({ success: false, message: 'Dokumen yang sudah lunas tidak dapat diubah statusnya.' });
       }
 
-      const updated = await Document.update(req.params.id, req.user.id, req.body);
+      const updated = await Document.update(req.params.id, req.user.id, req.body, req.user.company_id);
       await ActivityLog.log(req.user.id, updated.id, 'Updated document');
       res.json({ success: true, message: 'Dokumen berhasil diupdate.', data: updated });
     } catch (error) { next(error); }
@@ -103,10 +103,10 @@ const documentController = {
   async updateStatus(req, res, next) {
     try {
       const { status } = req.body;
-      const existing = await Document.findById(req.params.id, req.user.id);
+      const existing = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       
-      const updated = await Document.updateStatus(req.params.id, req.user.id, status);
+      const updated = await Document.updateStatus(req.params.id, req.user.id, status, req.user.company_id);
       await ActivityLog.log(req.user.id, updated.id, `Changed status to ${status}`);
 
       // Auto-generate reminders when invoice is sent
@@ -122,7 +122,7 @@ const documentController = {
   async processPayment(req, res, next) {
     try {
       const { payment_method, payment_date, notes } = req.body;
-      const existing = await Document.findById(req.params.id, req.user.id);
+      const existing = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       
       if (existing.status === 'paid') {
@@ -136,6 +136,7 @@ const documentController = {
       const receiptNumber = `RCP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
       const receipt = await Receipt.create({
         user_id: req.user.id,
+        company_id: req.user.company_id || null,
         document_id: existing.id,
         receipt_number: receiptNumber,
         amount: parseFloat(existing.total),
@@ -145,7 +146,7 @@ const documentController = {
       });
 
       // The Receipt.create already updates document status to 'paid' if amount >= total
-      const updated = await Document.findById(req.params.id, req.user.id);
+      const updated = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       
       await ActivityLog.log(req.user.id, updated.id, 
         `Payment processed: ${existing.transaction_type === 'sales' ? 'Invoice penjualan dibayar oleh pelanggan' : 'Invoice pembelian dibayar ke supplier'}`);
@@ -165,14 +166,14 @@ const documentController = {
   // Cancel document with 24h auto-delete timer
   async cancelDocument(req, res, next) {
     try {
-      const existing = await Document.findById(req.params.id, req.user.id);
+      const existing = await Document.findById(req.params.id, req.user.id, req.user.company_id);
       if (!existing) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       
       if (existing.status === 'paid') {
         return res.status(400).json({ success: false, message: 'Dokumen yang sudah lunas tidak dapat dibatalkan.' });
       }
 
-      const updated = await Document.cancelDocument(req.params.id, req.user.id);
+      const updated = await Document.cancelDocument(req.params.id, req.user.id, req.user.company_id);
       await ActivityLog.log(req.user.id, updated.id, 'Document cancelled - will be auto-deleted in 24 hours');
 
       res.json({ 
@@ -186,7 +187,7 @@ const documentController = {
   // Get payment tracking info
   async getPaymentTracker(req, res, next) {
     try {
-      const tracker = await Document.getPaymentTracker(req.params.id, req.user.id);
+      const tracker = await Document.getPaymentTracker(req.params.id, req.user.id, req.user.company_id);
       if (!tracker) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       res.json({ success: true, data: tracker });
     } catch (error) { next(error); }
@@ -194,7 +195,7 @@ const documentController = {
 
   async delete(req, res, next) {
     try {
-      const result = await Document.delete(req.params.id, req.user.id);
+      const result = await Document.delete(req.params.id, req.user.id, req.user.company_id);
       if (result.changes === 0) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
       res.json({ success: true, message: 'Dokumen berhasil dihapus.' });
     } catch (error) { next(error); }
@@ -204,7 +205,7 @@ const documentController = {
     try {
       const { q } = req.query;
       if (!q || q.length < 2) return res.json({ success: true, data: [] });
-      const results = await Document.search(req.user.id, q);
+      const results = await Document.search(req.user.id, q, req.user.company_id);
       res.json({ success: true, data: results });
     } catch (error) { next(error); }
   }
