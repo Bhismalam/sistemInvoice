@@ -286,11 +286,15 @@ export function renderLayout(container, activePage) {
             if (actionStr.includes('delete') || actionStr.includes('cancel')) { iconClass = 'delete'; iconStr = '<iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon>'; }
             if (actionStr.includes('payment') || actionStr.includes('receipt')) { iconClass = 'payment'; iconStr = '<iconify-icon icon="lucide:banknote" width="16" height="16"></iconify-icon>'; }
 
+            const docNumStr = n.document_number 
+              ? ` <span class="notification-doc-number" style="font-weight: 600; color: var(--accent-primary); font-family: monospace; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); padding: 1px 4px; border-radius: 4px; margin-left: 4px;">${n.document_number}</span>` 
+              : '';
+
             return `
               <div class="notification-item">
                 <div class="notification-icon ${iconClass}">${iconStr}</div>
                 <div class="notification-content">
-                  <div class="notification-text">${n.action}</div>
+                  <div class="notification-text">${n.action}${docNumStr}</div>
                   <div class="notification-time">${timeAgo(n.created_at)}</div>
                 </div>
               </div>
