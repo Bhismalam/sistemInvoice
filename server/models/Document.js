@@ -46,6 +46,48 @@ documentItemSchema.set('toObject', { virtuals: true });
 
 const DocumentModelDB = mongoose.model('Document', documentSchema);
 
+async function syncStock(oldDoc, newDoc) {
+  const { Product } = require('./Product');
+  const stockChanges = {}; // productId -> net change
+
+  const getProdId = (item) => {
+    if (!item || !item.product_id) return null;
+    return item.product_id._id ? item.product_id._id.toString() : item.product_id.toString();
+  };
+
+  // 1. Reverse the stock impact of the old document status/items
+  if (oldDoc && oldDoc.document_type === 'invoice' && oldDoc.status !== 'cancelled' && oldDoc.items) {
+    const factor = oldDoc.transaction_type === 'sales' ? -1 : 1;
+    for (const item of oldDoc.items) {
+      const pId = getProdId(item);
+      if (pId) {
+        stockChanges[pId] = (stockChanges[pId] || 0) - (factor * item.quantity);
+      }
+    }
+  }
+
+  // 2. Add the stock impact of the new document status/items
+  if (newDoc && newDoc.document_type === 'invoice' && newDoc.status !== 'cancelled' && newDoc.items) {
+    const factor = newDoc.transaction_type === 'sales' ? -1 : 1;
+    for (const item of newDoc.items) {
+      const pId = getProdId(item);
+      if (pId) {
+        stockChanges[pId] = (stockChanges[pId] || 0) + (factor * item.quantity);
+      }
+    }
+  }
+
+  // 3. Update the database
+  for (const [prodId, change] of Object.entries(stockChanges)) {
+    if (change !== 0) {
+      await Product.findByIdAndUpdate(prodId, { $inc: { stock: change } });
+    }
+  }
+
+  // 4. Ensure stock never falls below zero
+  await Product.updateMany({ stock: { $lt: 0 } }, { stock: 0 });
+}
+
 const Document = {
   async create(data) {
     if (data.items) {
@@ -56,31 +98,8 @@ const Document = {
     const doc = new DocumentModelDB(data);
     await doc.save();
 
-    // Adjust stock based on transaction type (this isn't part of the document save, it updates Product)
-    if (data.items && data.items.length > 0) {
-      const { Product } = require('./Product');
-      for (const item of data.items) {
-        if (item.product_id) {
-          const prodQuery = data.company_id 
-            ? { _id: item.product_id, company_id: data.company_id }
-            : { _id: item.product_id, user_id: data.user_id };
-
-          if (data.transaction_type === 'sales') {
-            await Product.findOneAndUpdate(
-              prodQuery,
-              { $inc: { stock: -item.quantity } }
-            );
-          } else if (data.transaction_type === 'purchase') {
-            await Product.findOneAndUpdate(
-              prodQuery,
-              { $inc: { stock: item.quantity } }
-            );
-          }
-        }
-      }
-      // Ensure stock doesn't go below zero
-      await Product.updateMany({ stock: { $lt: 0 } }, { stock: 0 });
-    }
+    // Adjust stock
+    await syncStock(null, doc);
 
     return this.findById(doc._id, data.user_id, data.company_id);
   },
@@ -196,7 +215,13 @@ const Document = {
     if (data.status === 'paid') data.paid_at = new Date();
     
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
-    await DocumentModelDB.findOneAndUpdate(query, data, { new: true });
+    const oldDoc = await DocumentModelDB.findOne(query);
+    if (!oldDoc) return null;
+
+    const newDoc = await DocumentModelDB.findOneAndUpdate(query, data, { new: true });
+    
+    await syncStock(oldDoc, newDoc);
+
     return this.findById(id, userId, companyId);
   },
 
@@ -204,13 +229,25 @@ const Document = {
     const update = { status };
     if (status === 'paid') update.paid_at = new Date();
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
-    await DocumentModelDB.findOneAndUpdate(query, update);
+    const oldDoc = await DocumentModelDB.findOne(query);
+    if (!oldDoc) return null;
+
+    const newDoc = await DocumentModelDB.findOneAndUpdate(query, update, { new: true });
+    
+    await syncStock(oldDoc, newDoc);
+
     return this.findById(id, userId, companyId);
   },
 
   async delete(id, userId, companyId = null) {
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
+    const oldDoc = await DocumentModelDB.findOne(query);
+    if (!oldDoc) return { changes: 0 };
+
     const res = await DocumentModelDB.deleteOne(query);
+    
+    await syncStock(oldDoc, null);
+
     return { changes: res.deletedCount };
   },
 
@@ -282,10 +319,17 @@ const Document = {
 
   async cancelDocument(id, userId, companyId = null) {
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
-    await DocumentModelDB.findOneAndUpdate(
+    const oldDoc = await DocumentModelDB.findOne(query);
+    if (!oldDoc) return null;
+
+    const newDoc = await DocumentModelDB.findOneAndUpdate(
       query,
-      { status: 'cancelled', cancelled_at: new Date() }
+      { status: 'cancelled', cancelled_at: new Date() },
+      { new: true }
     );
+
+    await syncStock(oldDoc, newDoc);
+
     return this.findById(id, userId, companyId);
   },
 
@@ -300,7 +344,13 @@ const Document = {
       update.cancelled_at = null;
     }
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
-    await DocumentModelDB.findOneAndUpdate(query, update);
+    const oldDoc = await DocumentModelDB.findOne(query);
+    if (!oldDoc) return null;
+
+    const newDoc = await DocumentModelDB.findOneAndUpdate(query, update, { new: true });
+
+    await syncStock(oldDoc, newDoc);
+
     return this.findById(id, userId, companyId);
   },
 
