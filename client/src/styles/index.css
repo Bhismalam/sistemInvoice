@@ -19,6 +19,8 @@ img { max-width: 100%; display: block; }
 
 /* === CSS VARIABLES === */
 :root {
+  --logo-text-primary: #F1F5F9;
+  --logo-text-secondary: #94A3B8;
   /* Background */
   --bg-primary: #0B1121;
   --bg-secondary: #131C31;
@@ -100,6 +102,8 @@ img { max-width: 100%; display: block; }
 
 /* === LIGHT MODE VARIABLES === */
 body.light-mode {
+  --logo-text-primary: #0F172A;
+  --logo-text-secondary: #475569;
   /* Background */
   --bg-primary: #F8FAFC;
   --bg-secondary: #FFFFFF;

@@ -1,5 +1,6 @@
 import { api } from '../utils/api.js';
 import { showToast } from '../router.js';
+import logo from '../assets/logo.svg';
 
 export function renderForgotPassword(container) {
   container.innerHTML = `
