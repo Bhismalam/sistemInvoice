@@ -1,4 +1,4 @@
-import { api, setTokens } from '../utils/api.js';
+﻿import { api, setTokens } from '../utils/api.js';
 import { showToast } from '../router.js';
 import { getFullLogoSVG } from '../utils/logo.js';
 
@@ -86,7 +86,7 @@ export function renderLogin(container) {
       setTokens(res.data.accessToken, res.data.refreshToken);
       sessionStorage.setItem('user', JSON.stringify(res.data.user));
       if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
-      showToast('Login berhasil! Selamat datang Ã°Å¸Å½â€°', 'success');
+      showToast('Login berhasil! Selamat datang ðŸŽ‰', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
       showToast(err.message || 'Login gagal', 'error');
@@ -112,7 +112,7 @@ export function renderLogin(container) {
             setTokens(res.data.accessToken, res.data.refreshToken);
             sessionStorage.setItem('user', JSON.stringify(res.data.user));
             if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
-            showToast('Login Google berhasil! Ã°Å¸Å½â€°', 'success');
+            showToast('Login Google berhasil! ðŸŽ‰', 'success');
             window.location.hash = '#/dashboard';
           } catch (err) {
             showToast(err.message || 'Login Google gagal', 'error');

@@ -1,4 +1,4 @@
-import { api, setTokens } from '../utils/api.js';
+﻿import { api, setTokens } from '../utils/api.js';
 import { showToast } from '../router.js';
 import { getFullLogoSVG } from '../utils/logo.js';
 
@@ -29,16 +29,16 @@ export function renderRegister(container) {
           <!-- Tab Toggle -->
           <div class="auth-tabs" id="auth-tabs">
             <button class="auth-tab ${defaultTab === 'create' ? 'active' : ''}" data-tab="create">
-              Ã°Å¸ÂÂ¢ Buat Perusahaan
+              ðŸ¢ Buat Perusahaan
             </button>
             <button class="auth-tab ${defaultTab === 'join' ? 'active' : ''}" data-tab="join">
-              Ã°Å¸Â¤Â Gabung Perusahaan
+              ðŸ¤ Gabung Perusahaan
             </button>
           </div>
 
           <!-- Invite Banner (shown when auto-detected from link) -->
           <div id="invite-banner" class="invite-banner" style="display:none;">
-            <span class="invite-banner__icon">Ã°Å¸Å½â€°</span>
+            <span class="invite-banner__icon">ðŸŽ‰</span>
             <div>
               <strong id="invite-company-name">Loading...</strong>
               <p>Anda diundang bergabung sebagai <span id="invite-role-name">...</span></p>
@@ -165,7 +165,7 @@ export function renderRegister(container) {
       if (res.data.company) {
         sessionStorage.setItem('company', JSON.stringify(res.data.company));
       }
-      showToast(res.message || 'Registrasi berhasil! Ã°Å¸Å½â€°', 'success');
+      showToast(res.message || 'Registrasi berhasil! ðŸŽ‰', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
       showToast(err.message || 'Registrasi gagal', 'error');
