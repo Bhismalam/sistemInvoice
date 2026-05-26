@@ -12,10 +12,10 @@ export function renderLayout(container, activePage) {
 
   container.innerHTML = `
     <aside class="sidebar ${collapsed ? 'collapsed' : ''}" id="sidebar">
-      <div class="sidebar__logo">
+      <a href="#/dashboard" class="sidebar__logo">
         <div class="sidebar__logo-icon">${LOGO_ICON_SVG}</div>
         <div class="sidebar__logo-text">Invoice<span>Flow</span></div>
-      </div>
+      </a>
       <nav class="sidebar__nav">
         <div class="sidebar__section-label">Menu</div>
           <a href="#/dashboard" class="nav-item ${currentPath === '#/dashboard' ? 'active' : ''}">
