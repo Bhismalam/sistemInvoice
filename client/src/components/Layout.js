@@ -1,4 +1,4 @@
-﻿import { getInitials } from '../utils/format.js';
+import { getInitials } from '../utils/format.js';
 import { LOGO_ICON_SVG } from '../utils/logo.js';
 
 
@@ -174,7 +174,7 @@ export function renderLayout(container, activePage) {
               <a href="#/${item.transaction_type === 'sales' ? 'sales' : 'purchases'}/${item.document_type === 'invoice' ? 'invoices' : 'orders'}/${item.id}" class="search-result-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-bottom:1px solid var(--border-color); text-decoration:none; color:inherit; background:var(--bg-secondary);" onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background='var(--bg-secondary)'">
                 <div>
                   <div style="font-weight:600; margin-bottom:0.25rem;">${item.document_number}</div>
-                  <div style="font-size:0.875rem; color:var(--text-secondary);">${item.contact_name || 'Tanpa Kontak'} â€¢ ${formatDate(item.issue_date)}</div>
+                  <div style="font-size:0.875rem; color:var(--text-secondary);">${item.contact_name || 'Tanpa Kontak'} &middot; ${formatDate(item.issue_date)}</div>
                 </div>
                 <div style="text-align:right;">
                   <div style="font-weight:600; color:var(--primary-color);">${formatCurrency(item.total)}</div>

@@ -1,4 +1,4 @@
-﻿import { api, setTokens } from '../utils/api.js';
+import { api, setTokens } from '../utils/api.js';
 import { showToast } from '../router.js';
 import { getFullLogoSVG } from '../utils/logo.js';
 
@@ -29,16 +29,16 @@ export function renderRegister(container) {
           <!-- Tab Toggle -->
           <div class="auth-tabs" id="auth-tabs">
             <button class="auth-tab ${defaultTab === 'create' ? 'active' : ''}" data-tab="create">
-              ðŸ¢ Buat Perusahaan
+              <iconify-icon icon="lucide:building-2" width="16" height="16" style="vertical-align:-3px;margin-right:6px"></iconify-icon> Buat Perusahaan
             </button>
             <button class="auth-tab ${defaultTab === 'join' ? 'active' : ''}" data-tab="join">
-              ðŸ¤ Gabung Perusahaan
+              <iconify-icon icon="lucide:users" width="16" height="16" style="vertical-align:-3px;margin-right:6px"></iconify-icon> Gabung Perusahaan
             </button>
           </div>
 
           <!-- Invite Banner (shown when auto-detected from link) -->
           <div id="invite-banner" class="invite-banner" style="display:none;">
-            <span class="invite-banner__icon">ðŸŽ‰</span>
+            <span class="invite-banner__icon"><iconify-icon icon="lucide:party-popper" width="24" height="24" style="color:var(--accent-primary)"></iconify-icon></span>
             <div>
               <strong id="invite-company-name">Loading...</strong>
               <p>Anda diundang bergabung sebagai <span id="invite-role-name">...</span></p>
@@ -165,7 +165,7 @@ export function renderRegister(container) {
       if (res.data.company) {
         sessionStorage.setItem('company', JSON.stringify(res.data.company));
       }
-      showToast(res.message || 'Registrasi berhasil! ðŸŽ‰', 'success');
+      showToast(res.message || 'Registrasi berhasil!', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
       showToast(err.message || 'Registrasi gagal', 'error');
