@@ -1,32 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="logo-icon-svg" style="width: 100%; height: 100%; display: block;">
   <defs>
-    <linearGradient id="docGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="docGradientIconBack" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3730a3" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="docGradientIconFront" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4f46e5" />
       <stop offset="100%" stop-color="#2563eb" />
     </linearGradient>
-    <linearGradient id="waveGradient1Fav" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="waveGradient1Icon" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#00d2ff" />
       <stop offset="100%" stop-color="#0066ff" />
     </linearGradient>
-    <linearGradient id="waveGradient2Fav" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="waveGradient2Icon" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#0052d4" />
       <stop offset="50%" stop-color="#4364f7" />
       <stop offset="100%" stop-color="#6fb1fc" />
     </linearGradient>
-    <linearGradient id="waveGradient3Fav" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="waveGradient3Icon" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#1e3a8a" />
       <stop offset="100%" stop-color="#3b82f6" />
     </linearGradient>
+    <filter id="logoShadowIcon" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#091e36" flood-opacity="0.15" />
+    </filter>
   </defs>
-  <g transform="translate(2, 5)">
-    <rect x="34" y="16" width="28" height="36" rx="3" fill="none" stroke="url(#docGradientFav)" stroke-width="2.5" />
-    <rect x="49" y="22" width="5" height="5" fill="none" stroke="url(#docGradientFav)" stroke-width="2" />
-    <rect x="44" y="23" width="28" height="36" rx="3" fill="none" stroke="url(#docGradientFav)" stroke-width="2.5" />
-    <line x1="50" y1="31" x2="62" y2="31" stroke="url(#docGradientFav)" stroke-width="2" stroke-linecap="round" />
-    <line x1="50" y1="37" x2="58" y2="37" stroke="url(#docGradientFav)" stroke-width="2" stroke-linecap="round" />
-    <path d="M 60,45 L 63,48 L 68,42" fill="none" stroke="url(#docGradientFav)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M 8,50 C 24,36 44,66 74,40 C 77,36 78,30 78,30 C 78,30 79,42 75,50 C 67,62 45,70 28,70 C 15,70 8,60 8,50 Z" fill="url(#waveGradient3Fav)" opacity="0.8" />
-    <path d="M 11,52 C 26,38 46,68 76,42 C 79,38 80,32 80,32 C 80,32 81,44 77,52 C 69,64 47,71 30,71 C 17,71 11,62 11,52 Z" fill="url(#waveGradient2Fav)" opacity="0.9" />
-    <path d="M 14,54 C 28,40 48,70 78,44 C 81,40 82,34 82,34 C 82,34 83,46 79,54 C 71,66 49,72 32,72 C 19,72 14,64 14,54 Z" fill="url(#waveGradient1Fav)" />
+  <g transform="translate(2, 2)" filter="url(#logoShadowIcon)">
+    <!-- Back Document -->
+    <rect x="25" y="10" width="36" height="46" rx="4" fill="#ffffff" stroke="url(#docGradientIconBack)" stroke-width="2.5" />
+    <line x1="32" y1="20" x2="54" y2="20" stroke="url(#docGradientIconBack)" stroke-width="2" stroke-linecap="round" />
+    <line x1="32" y1="26" x2="48" y2="26" stroke="url(#docGradientIconBack)" stroke-width="2" stroke-linecap="round" />
+    
+    <!-- Front Document (Larger, more prominent) -->
+    <rect x="42" y="18" width="40" height="52" rx="4" fill="#ffffff" stroke="url(#docGradientIconFront)" stroke-width="3" />
+    
+    <!-- Document Lines -->
+    <line x1="49" y1="30" x2="75" y2="30" stroke="url(#docGradientIconFront)" stroke-width="2.5" stroke-linecap="round" />
+    <line x1="49" y1="38" x2="68" y2="38" stroke="url(#docGradientIconFront)" stroke-width="2.5" stroke-linecap="round" />
+    
+    <!-- Small Data Visualization (Pie Chart) -->
+    <circle cx="56" cy="52" r="6" fill="none" stroke="url(#docGradientIconFront)" stroke-width="2" />
+    <path d="M 56,52 L 56,46 A 6,6 0 0,1 62,52 Z" fill="url(#docGradientIconFront)" />
+    
+    <!-- Checkmark Badge -->
+    <circle cx="72" cy="60" r="7" fill="url(#waveGradient1Icon)" />
+    <path d="M 69,60 L 71,62 L 75,57" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- 3 Layered Waves -->
+    <path d="M 0,60 C 20,40 45,75 80,45 C 84,40 85,32 85,32 C 85,32 86,46 81,56 C 71,72 45,80 25,80 C 10,80 0,68 0,60 Z" fill="url(#waveGradient3Icon)" opacity="0.8" />
+    <path d="M 3,63 C 23,43 48,78 83,48 C 87,43 88,35 88,35 C 88,35 89,49 84,59 C 74,75 48,83 28,83 C 13,83 3,71 3,63 Z" fill="url(#waveGradient2Icon)" opacity="0.9" />
+    <path d="M 6,66 C 26,46 51,81 86,51 C 90,46 91,38 91,38 C 91,38 92,52 87,62 C 77,78 51,86 31,86 C 16,86 6,74 6,66 Z" fill="url(#waveGradient1Icon)" />
   </g>
 </svg>
