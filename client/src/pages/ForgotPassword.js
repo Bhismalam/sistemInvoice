@@ -1,6 +1,6 @@
 import { api } from '../utils/api.js';
 import { showToast } from '../router.js';
-import logo from '../assets/logo.svg';
+import { getFullLogoSVG } from '../utils/logo.js';
 
 export function renderForgotPassword(container) {
   container.innerHTML = `
@@ -35,9 +35,7 @@ export function renderForgotPassword(container) {
       <div class="auth-brand">
         <div class="auth-brand__decor auth-brand__decor--1"></div>
         <div class="auth-brand__decor auth-brand__decor--2"></div>
-        <div class="auth-brand__logo">
-          <iconify-icon icon="lucide:receipt" width="24" height="24" style="vertical-align:-4px;color:var(--accent-primary);margin-right:8px"></iconify-icon><span>Invoice</span>Flow
-        </div>
+        <div class="auth-brand__logo" style="width: 240px; max-width: 100%; justify-content: center; margin-bottom: var(--space-base); z-index: 1;">${getFullLogoSVG()}</div>
         <p class="auth-brand__tagline">Kelola invoice & pembayaran dengan mudah</p>
         <div class="auth-brand__features">
           <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Verifikasi aman 6-Digit OTP</div>

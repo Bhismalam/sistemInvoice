@@ -1,0 +1,109 @@
+export const LOGO_ICON_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="logo-icon-svg" style="width: 100%; height: 100%; display: block;">
+  <defs>
+    <linearGradient id="docGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14d9b6" />
+      <stop offset="35%" stop-color="#0bbba0" />
+      <stop offset="100%" stop-color="#0c5b8b" />
+    </linearGradient>
+    <linearGradient id="foldGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a5482" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="arrowGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0b5b8d" />
+      <stop offset="40%" stop-color="#09827a" />
+      <stop offset="80%" stop-color="#12cca9" />
+      <stop offset="100%" stop-color="#17f3c4" />
+    </linearGradient>
+    <filter id="premiumShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#08304a" flood-opacity="0.15" />
+    </filter>
+    <filter id="arrowShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#031f30" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <g filter="url(#premiumShadow)">
+    <path d="M 28,16 A 6,6 0 0 1 34,10 L 62,10 L 74,22 L 74,74 A 6,6 0 0 1 68,80 L 34,80 A 6,6 0 0 1 28,74 Z" fill="url(#docGradient)" />
+    <path d="M 62,10 L 62,18 A 4,4 0 0 0 66,22 L 74,22 Z" fill="url(#foldGradient)" />
+    <path d="M 62,10 L 62,18 A 4,4 0 0 0 66,22 L 74,22 Z" fill="#14d9b6" opacity="0.3" />
+  </g>
+  <g opacity="0.25">
+    <rect x="36" y="24" width="3" height="12" rx="1.5" fill="#ffffff" />
+    <rect x="42" y="20" width="3" height="16" rx="1.5" fill="#ffffff" />
+    <rect x="48" y="27" width="3" height="9" rx="1.5" fill="#ffffff" />
+    <circle cx="55" cy="22" r="1.5" fill="#ffffff" />
+    <line x1="36" y1="44" x2="52" y2="44" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+    <line x1="36" y1="52" x2="46" y2="52" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+  </g>
+  <text x="60" y="47" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" opacity="0.4" text-anchor="middle">$</text>
+  <path d="M 48,50 C 40,42 28,52 28,64 C 28,76 40,82 46,74 C 52,66 50,54 62,46 C 70,40 80,32 86,28" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" />
+  <polygon points="76,34 92,20 90,38 83,32" fill="#ffffff" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" />
+  <g filter="url(#arrowShadow)">
+    <path d="M 48,50 C 40,42 28,52 28,64 C 28,76 40,82 46,74 C 52,66 50,54 62,46 C 70,40 80,32 86,28" fill="none" stroke="url(#arrowGradient)" stroke-width="6.5" stroke-linecap="round" />
+    <polygon points="76,34 92,20 90,38 83,32" fill="url(#arrowGradient)" stroke="url(#arrowGradient)" stroke-width="1.5" stroke-linejoin="round" />
+  </g>
+</svg>
+`;
+
+export const getFullLogoSVG = (width = "100%") => `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 185" style="width: ${width}; height: auto; display: block;">
+  <defs>
+    <linearGradient id="docGradientFull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14d9b6" />
+      <stop offset="35%" stop-color="#0bbba0" />
+      <stop offset="100%" stop-color="#0c5b8b" />
+    </linearGradient>
+    <linearGradient id="foldGradientFull" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a5482" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="arrowGradientFull" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0b5b8d" />
+      <stop offset="40%" stop-color="#09827a" />
+      <stop offset="80%" stop-color="#12cca9" />
+      <stop offset="100%" stop-color="#17f3c4" />
+    </linearGradient>
+    <linearGradient id="textFlowGradientFull" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0bbba0" />
+      <stop offset="100%" stop-color="#14d9b6" />
+    </linearGradient>
+    <filter id="premiumShadowFull" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#08304a" flood-opacity="0.15" />
+    </filter>
+    <filter id="arrowShadowFull" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#031f30" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <g transform="translate(110, 5)">
+    <g filter="url(#premiumShadowFull)">
+      <path d="M 28,16 A 6,6 0 0 1 34,10 L 62,10 L 74,22 L 74,74 A 6,6 0 0 1 68,80 L 34,80 A 6,6 0 0 1 28,74 Z" fill="url(#docGradientFull)" />
+      <path d="M 62,10 L 62,18 A 4,4 0 0 0 66,22 L 74,22 Z" fill="url(#foldGradientFull)" />
+      <path d="M 62,10 L 62,18 A 4,4 0 0 0 66,22 L 74,22 Z" fill="#14d9b6" opacity="0.3" />
+    </g>
+    <g opacity="0.25">
+      <rect x="36" y="24" width="3" height="12" rx="1.5" fill="#ffffff" />
+      <rect x="42" y="20" width="3" height="16" rx="1.5" fill="#ffffff" />
+      <rect x="48" y="27" width="3" height="9" rx="1.5" fill="#ffffff" />
+      <circle cx="55" cy="22" r="1.5" fill="#ffffff" />
+      <line x1="36" y1="44" x2="52" y2="44" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+      <line x1="36" y1="52" x2="46" y2="52" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+    </g>
+    <text x="60" y="47" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="13" opacity="0.4" text-anchor="middle">$</text>
+    <path d="M 48,50 C 40,42 28,52 28,64 C 28,76 40,82 46,74 C 52,66 50,54 62,46 C 70,40 80,32 86,28" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" />
+    <polygon points="76,34 92,20 90,38 83,32" fill="#ffffff" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" />
+    <g filter="url(#arrowShadowFull)">
+      <path d="M 48,50 C 40,42 28,52 28,64 C 28,76 40,82 46,74 C 52,66 50,54 62,46 C 70,40 80,32 86,28" fill="none" stroke="url(#arrowGradientFull)" stroke-width="6.5" stroke-linecap="round" />
+      <polygon points="76,34 92,20 90,38 83,32" fill="url(#arrowGradientFull)" stroke="url(#arrowGradientFull)" stroke-width="1.5" stroke-linejoin="round" />
+    </g>
+  </g>
+  <text x="160" y="142" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" text-anchor="middle" letter-spacing="0.5">
+    <tspan fill="var(--logo-text-primary, #0c3c60)">INVOICE</tspan>
+    <tspan fill="url(#textFlowGradientFull)"> </tspan>
+    <tspan fill="url(#textFlowGradientFull)">FLOW</tspan>
+  </text>
+  <text x="160" y="165" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="600" fill="var(--logo-text-secondary, #4d6d8c)" text-anchor="middle" letter-spacing="3.2" opacity="0.9">
+    STREAMLINED BILLING SOLUTIONS
+  </text>
+</svg>
+`;

@@ -1,6 +1,6 @@
 import { api, setTokens } from '../utils/api.js';
 import { showToast } from '../router.js';
-import logo from '../assets/logo.svg';
+import { getFullLogoSVG } from '../utils/logo.js';
 
 export function renderRegister(container) {
   // Check for invite token in URL
@@ -13,7 +13,7 @@ export function renderRegister(container) {
       <div class="auth-brand">
         <div class="auth-brand__decor auth-brand__decor--1"></div>
         <div class="auth-brand__decor auth-brand__decor--2"></div>
-        <div class="auth-brand__logo" style="width: 200px; max-width: 100%; justify-content: center; margin-bottom: var(--space-base);"><img src="${logo}" alt="InvoiceFlow Logo" style="width: 100%; height: auto; display: block;" /></div>
+        <div class="auth-brand__logo" style="width: 240px; max-width: 100%; justify-content: center; margin-bottom: var(--space-base); z-index: 1;">${getFullLogoSVG()}</div>
         <p class="auth-brand__tagline">Kelola invoice & pembayaran dengan mudah</p>
         <div class="auth-brand__features">
           <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Gratis untuk mulai</div>
@@ -29,16 +29,16 @@ export function renderRegister(container) {
           <!-- Tab Toggle -->
           <div class="auth-tabs" id="auth-tabs">
             <button class="auth-tab ${defaultTab === 'create' ? 'active' : ''}" data-tab="create">
-              ðŸ¢ Buat Perusahaan
+              Ã°Å¸ÂÂ¢ Buat Perusahaan
             </button>
             <button class="auth-tab ${defaultTab === 'join' ? 'active' : ''}" data-tab="join">
-              ðŸ¤ Gabung Perusahaan
+              Ã°Å¸Â¤Â Gabung Perusahaan
             </button>
           </div>
 
           <!-- Invite Banner (shown when auto-detected from link) -->
           <div id="invite-banner" class="invite-banner" style="display:none;">
-            <span class="invite-banner__icon">ðŸŽ‰</span>
+            <span class="invite-banner__icon">Ã°Å¸Å½â€°</span>
             <div>
               <strong id="invite-company-name">Loading...</strong>
               <p>Anda diundang bergabung sebagai <span id="invite-role-name">...</span></p>
@@ -165,7 +165,7 @@ export function renderRegister(container) {
       if (res.data.company) {
         sessionStorage.setItem('company', JSON.stringify(res.data.company));
       }
-      showToast(res.message || 'Registrasi berhasil! ðŸŽ‰', 'success');
+      showToast(res.message || 'Registrasi berhasil! Ã°Å¸Å½â€°', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
       showToast(err.message || 'Registrasi gagal', 'error');

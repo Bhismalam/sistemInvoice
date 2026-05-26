@@ -1,6 +1,6 @@
 import { api, setTokens } from '../utils/api.js';
 import { showToast } from '../router.js';
-import logo from '../assets/logo.svg';
+import { getFullLogoSVG } from '../utils/logo.js';
 
 export function renderLogin(container) {
   container.innerHTML = `
@@ -8,7 +8,7 @@ export function renderLogin(container) {
       <div class="auth-brand">
         <div class="auth-brand__decor auth-brand__decor--1"></div>
         <div class="auth-brand__decor auth-brand__decor--2"></div>
-        <div class="auth-brand__logo" style="width: 200px; max-width: 100%; justify-content: center; margin-bottom: var(--space-base);"><img src="${logo}" alt="InvoiceFlow Logo" style="width: 100%; height: auto; display: block;" /></div>
+        <div class="auth-brand__logo" style="width: 240px; max-width: 100%; justify-content: center; margin-bottom: var(--space-base); z-index: 1;">${getFullLogoSVG()}</div>
         <p class="auth-brand__tagline">Platform Invoicing & Pembayaran Digital untuk UMKM Indonesia</p>
         <div class="auth-brand__features">
           <div class="auth-brand__feature"><iconify-icon icon="lucide:check-circle" width="16" height="16" style="color:var(--accent-primary);vertical-align:-2px;margin-right:8px"></iconify-icon> Buat invoice profesional dalam 3 menit</div>
@@ -86,7 +86,7 @@ export function renderLogin(container) {
       setTokens(res.data.accessToken, res.data.refreshToken);
       sessionStorage.setItem('user', JSON.stringify(res.data.user));
       if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
-      showToast('Login berhasil! Selamat datang ðŸŽ‰', 'success');
+      showToast('Login berhasil! Selamat datang Ã°Å¸Å½â€°', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
       showToast(err.message || 'Login gagal', 'error');
@@ -112,7 +112,7 @@ export function renderLogin(container) {
             setTokens(res.data.accessToken, res.data.refreshToken);
             sessionStorage.setItem('user', JSON.stringify(res.data.user));
             if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
-            showToast('Login Google berhasil! ðŸŽ‰', 'success');
+            showToast('Login Google berhasil! Ã°Å¸Å½â€°', 'success');
             window.location.hash = '#/dashboard';
           } catch (err) {
             showToast(err.message || 'Login Google gagal', 'error');

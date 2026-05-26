@@ -1,5 +1,5 @@
 import { getInitials } from '../utils/format.js';
-import logoIcon from '../assets/logo-icon.svg';
+import { LOGO_ICON_SVG } from '../utils/logo.js';
 
 // The menu structure is now hardcoded below since it has categories
 
@@ -12,7 +12,7 @@ export function renderLayout(container, activePage) {
   container.innerHTML = `
     <aside class="sidebar ${collapsed ? 'collapsed' : ''}" id="sidebar">
       <div class="sidebar__logo">
-        <div class="sidebar__logo-icon"><img src="${logoIcon}" alt="Logo" style="width:28px;height:28px;display:block;" /></div>
+        <div class="sidebar__logo-icon">${LOGO_ICON_SVG}</div>
         <div class="sidebar__logo-text">Invoice<span>Flow</span></div>
       </div>
       <nav class="sidebar__nav">
@@ -173,7 +173,7 @@ export function renderLayout(container, activePage) {
               <a href="#/${item.transaction_type === 'sales' ? 'sales' : 'purchases'}/${item.document_type === 'invoice' ? 'invoices' : 'orders'}/${item.id}" class="search-result-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; border-bottom:1px solid var(--border-color); text-decoration:none; color:inherit; background:var(--bg-secondary);" onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background='var(--bg-secondary)'">
                 <div>
                   <div style="font-weight:600; margin-bottom:0.25rem;">${item.document_number}</div>
-                  <div style="font-size:0.875rem; color:var(--text-secondary);">${item.contact_name || 'Tanpa Kontak'} â€¢ ${formatDate(item.issue_date)}</div>
+                  <div style="font-size:0.875rem; color:var(--text-secondary);">${item.contact_name || 'Tanpa Kontak'} Ã¢â‚¬Â¢ ${formatDate(item.issue_date)}</div>
                 </div>
                 <div style="text-align:right;">
                   <div style="font-weight:600; color:var(--primary-color);">${formatCurrency(item.total)}</div>
