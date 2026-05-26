@@ -85,6 +85,8 @@ iconify-icon { display: inline-flex; vertical-align: middle; }
 .notification-list { max-height: 380px; overflow-y: auto; }
 .notification-item { display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color-light); transition: background var(--transition-fast); text-align: left; }
 .notification-item:hover { background: var(--bg-secondary); }
+.notification-item--clickable { cursor: pointer; position: relative; }
+.notification-item--clickable:hover::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent-primary); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .notification-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); font-size: 1.1rem; flex-shrink: 0; }
 .notification-icon.create { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .notification-icon.update { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }

@@ -292,8 +292,12 @@ export function renderLayout(container, activePage) {
               ? ` <span class="notification-doc-number" style="font-weight: 600; color: var(--accent-primary); font-family: monospace; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); padding: 1px 4px; border-radius: 4px; margin-left: 4px;">${n.document_number}</span>` 
               : '';
 
+            const hasLink = n.document_id && n.transaction_type && n.document_type;
+            const linkAttrs = hasLink ? `data-doc-id="${n.document_id}" data-tx-type="${n.transaction_type}" data-doc-type="${n.document_type}"` : '';
+            const isClickableClass = hasLink ? 'notification-item--clickable' : '';
+
             return `
-              <div class="notification-item">
+              <div class="notification-item ${isClickableClass}" ${linkAttrs}>
                 <div class="notification-icon ${iconClass}">${iconStr}</div>
                 <div class="notification-content">
                   <div class="notification-text">${n.action}${docNumStr}</div>
@@ -322,7 +326,35 @@ export function renderLayout(container, activePage) {
     }
   });
 
-  notifDropdown?.addEventListener('click', (e) => e.stopPropagation());
+  notifDropdown?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    const item = e.target.closest('.notification-item--clickable');
+    if (item) {
+      const docId = item.getAttribute('data-doc-id');
+      const txType = item.getAttribute('data-tx-type');
+      const docType = item.getAttribute('data-doc-type');
+      
+      if (docId && txType && docType) {
+        notifDropdown.classList.remove('open');
+        
+        // Auto Mark-As-Read when clicked
+        try {
+          const { api } = await import('../utils/api.js');
+          await api('/notifications/read', { method: 'POST' });
+          if (notifBadge) notifBadge.style.display = 'none';
+          if (markReadBtn) markReadBtn.style.display = 'none';
+        } catch (err) {
+          console.error('Error marking notifications as read on click:', err);
+        }
+        
+        // Navigation segment mapping
+        const txSegment = txType === 'sales' ? 'sales' : 'purchases';
+        const docSegment = docType === 'order' ? 'orders' : 'invoices';
+        window.location.hash = `#/${txSegment}/${docSegment}/${docId}`;
+      }
+    }
+  });
 
   document.addEventListener('click', (e) => {
     if (notifDropdown?.classList.contains('open') && !notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {

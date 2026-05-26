@@ -43,7 +43,7 @@ const ActivityLogModel = {
       .limit(limit)
       .populate({
         path: 'document_id',
-        select: 'document_number contact_id',
+        select: 'document_number contact_id transaction_type document_type',
         populate: { path: 'contact_id', select: 'name' }
       })
       .then(logs => logs.map(log => {
@@ -52,7 +52,9 @@ const ActivityLogModel = {
           ...doc,
           document_number: doc.document_id ? doc.document_id.document_number : null,
           contact_name: doc.document_id && doc.document_id.contact_id ? doc.document_id.contact_id.name : null,
-          document_id: doc.document_id ? doc.document_id._id.toString() : null
+          document_id: doc.document_id ? doc.document_id._id.toString() : null,
+          transaction_type: doc.document_id ? doc.document_id.transaction_type : null,
+          document_type: doc.document_id ? doc.document_id.document_type : null
         };
       }));
   },
