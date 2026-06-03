@@ -21,19 +21,19 @@ export function renderLogin(container) {
         <div class="auth-form animate-slide-up">
           <h1 class="auth-form__title">Selamat Datang <iconify-icon icon="lucide:smile" width="26" height="26" style="vertical-align:-4px;color:var(--accent-primary);margin-left:4px"></iconify-icon></h1>
           <p class="auth-form__subtitle">Masuk ke akun InvoiceFlow Anda</p>
-          <form id="login-form">
+          <form id="login-form" autocomplete="off">
             <div class="form-group">
               <label class="form-label">Email</label>
               <div class="input-icon-wrapper">
                 <span class="input-icon"><iconify-icon icon="lucide:mail" width="18" height="18"></iconify-icon></span>
-                <input type="email" class="form-input" id="login-email" placeholder="nama@email.com" required />
+                <input type="email" class="form-input" id="login-email" placeholder="nama@email.com" required autocomplete="new-password" />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Password</label>
               <div class="input-icon-wrapper">
                 <span class="input-icon"><iconify-icon icon="lucide:lock" width="18" height="18"></iconify-icon></span>
-                <input type="password" class="form-input" id="login-password" placeholder="Masukkan password" required />
+                <input type="password" class="form-input" id="login-password" placeholder="Masukkan password" required autocomplete="new-password" />
                 <button type="button" class="input-toggle" id="toggle-password" style="background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0 8px;">
                   <iconify-icon icon="lucide:eye" width="18" height="18" id="eye-icon" style="color:var(--text-secondary)"></iconify-icon>
                 </button>

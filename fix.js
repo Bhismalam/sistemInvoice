@@ -1,0 +1,1 @@
+const fs = require('fs'); let c = fs.readFileSync('client/src/pages/Login.js', 'utf8'); c = c.replace(' value="admin@invoiceflow.id"', ''); c = c.replace(' value="password123"', ''); fs.writeFileSync('client/src/pages/Login.js', c);
