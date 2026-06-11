@@ -219,8 +219,42 @@ async function renderProfileTab(content, page) {
   const readOnly = !ctx.canEditCompany;
   const ro = readOnly ? 'disabled style="opacity:0.6;cursor:not-allowed"' : '';
 
+  const apiBase = import.meta.env.VITE_API_URL || '/api';
+  const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+
   content.innerHTML = `
     <form id="company-profile-form" class="settings-form card">
+      ${readOnly ? '<div style="padding:10px 14px;border-radius:var(--radius-md);background:rgba(99,102,241,0.08);color:var(--accent-primary);font-size:0.85rem;margin-bottom:var(--space-lg)">Anda hanya dapat melihat informasi perusahaan. Hubungi Owner untuk mengubah data.</div>' : ''}
+      
+      <!-- COMPANY LOGO SECTION -->
+      <div class="form-group" style="margin-bottom:var(--space-xl);border-bottom:1px solid var(--border);padding-bottom:var(--space-xl)">
+        <label class="form-label">Logo Perusahaan</label>
+        <div style="display:flex;align-items:center;gap:var(--space-lg);margin-top:8px">
+          <div id="company-logo-preview" style="width:120px;height:70px;border-radius:var(--radius-sm);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg-primary);position:relative">
+            ${c.logo ? `
+              <img src="${cleanApiBase}${c.logo}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain" />
+            ` : `
+              <span class="text-muted" style="font-size:0.75rem;font-weight:600">BELUM ADA LOGO</span>
+            `}
+          </div>
+          ${!readOnly ? `
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-select-logo" style="padding:6px 12px;font-size:0.8rem">
+                  <iconify-icon icon="lucide:upload" width="14" height="14" style="vertical-align:-2px;margin-right:4px"></iconify-icon> Pilih Logo
+                </button>
+                ${c.logo ? `
+                  <button type="button" class="btn btn-danger-outline btn-sm" id="btn-delete-logo" style="padding:6px 12px;font-size:0.8rem">
+                    <iconify-icon icon="lucide:trash-2" width="14" height="14" style="vertical-align:-2px;margin-right:4px"></iconify-icon> Hapus
+                  </button>
+                ` : ''}
+              </div>
+              <input type="file" id="cp-logo-input" accept="image/png, image/jpeg, image/jpg" style="display:none" />
+              <p class="text-muted" style="font-size:0.75rem;margin:0">Mendukung format PNG, JPG, JPEG. Ukuran maks 2MB.</p>
+            </div>
+          ` : ''}
+        </div>
+      </div>
       ${readOnly ? '<div style="padding:10px 14px;border-radius:var(--radius-md);background:rgba(99,102,241,0.08);color:var(--accent-primary);font-size:0.85rem;margin-bottom:var(--space-lg)">ℹ️ Anda hanya dapat melihat informasi perusahaan. Hubungi Owner untuk mengubah data.</div>' : ''}
       <div class="form-row">
         <div class="form-group"><label class="form-label">Nama Perusahaan</label>
@@ -255,6 +289,69 @@ async function renderProfileTab(content, page) {
   `;
 
   if (!readOnly) {
+    // Select file button trigger
+    const selectBtn = page.querySelector('#btn-select-logo');
+    const fileInput = page.querySelector('#cp-logo-input');
+    
+    selectBtn?.addEventListener('click', () => fileInput.click());
+
+    // File change upload handler
+    fileInput?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Ukuran file melebihi batas 2MB.', 'error');
+        return;
+      }
+
+      const preview = page.querySelector('#company-logo-preview');
+      const originalHTML = preview.innerHTML;
+      preview.innerHTML = '<span class="spinner" style="width:20px;height:20px"></span>';
+
+      try {
+        const formData = new FormData();
+        formData.append('logo', file);
+
+        const response = await api('/company/logo', {
+          method: 'POST',
+          body: formData
+        });
+
+        showToast(response.message || 'Logo berhasil diperbarui!', 'success');
+        loadTab('profile', page);
+      } catch (err) {
+        showToast(err.message, 'error');
+        preview.innerHTML = originalHTML;
+      }
+    });
+
+    // Delete logo handler
+    const deleteBtn = page.querySelector('#btn-delete-logo');
+    deleteBtn?.addEventListener('click', async () => {
+      const preview = page.querySelector('#company-logo-preview');
+      const originalHTML = preview.innerHTML;
+      preview.innerHTML = '<span class="spinner" style="width:20px;height:20px"></span>';
+
+      try {
+        const confirmResult = await showConfirm('Apakah Anda yakin ingin menghapus logo perusahaan?');
+        if (!confirmResult) {
+          preview.innerHTML = originalHTML;
+          return;
+        }
+
+        const response = await api('/company/logo', {
+          method: 'DELETE'
+        });
+
+        showToast(response.message || 'Logo berhasil dihapus!', 'success');
+        loadTab('profile', page);
+      } catch (err) {
+        showToast(err.message, 'error');
+        preview.innerHTML = originalHTML;
+      }
+    });
+
     page.querySelector('#company-profile-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {

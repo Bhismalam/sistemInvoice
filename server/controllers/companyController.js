@@ -185,6 +185,82 @@ const companyController = {
       if (!invitation) return res.status(404).json({ success: false, message: 'Undangan tidak ditemukan.' });
       res.json({ success: true, message: 'Undangan berhasil dibatalkan.' });
     } catch (error) { next(error); }
+  },
+
+  async uploadLogo(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'File logo wajib diunggah.' });
+      }
+
+      const { Company } = require('../models/Company');
+      const company = await Company.findById(req.user.company_id);
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Perusahaan tidak ditemukan.' });
+      }
+
+      const fs = require('fs');
+      const path = require('path');
+
+      // Delete old logo file if it exists
+      if (company.logo) {
+        const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
+        const oldLogoPath = path.join(uploadDir, path.basename(company.logo));
+        if (fs.existsSync(oldLogoPath)) {
+          try {
+            fs.unlinkSync(oldLogoPath);
+          } catch (err) {
+            console.error('Failed to delete old logo file:', err);
+          }
+        }
+      }
+
+      const logoUrl = `/uploads/${req.file.filename}`;
+      company.logo = logoUrl;
+      await company.save();
+
+      res.json({
+        success: true,
+        message: 'Logo perusahaan berhasil diperbarui!',
+        data: {
+          logo: logoUrl
+        }
+      });
+    } catch (error) { next(error); }
+  },
+
+  async deleteLogo(req, res, next) {
+    try {
+      const { Company } = require('../models/Company');
+      const company = await Company.findById(req.user.company_id);
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Perusahaan tidak ditemukan.' });
+      }
+
+      const fs = require('fs');
+      const path = require('path');
+
+      // Delete file from disk
+      if (company.logo) {
+        const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
+        const logoPath = path.join(uploadDir, path.basename(company.logo));
+        if (fs.existsSync(logoPath)) {
+          try {
+            fs.unlinkSync(logoPath);
+          } catch (err) {
+            console.error('Failed to delete logo file:', err);
+          }
+        }
+      }
+
+      company.logo = null;
+      await company.save();
+
+      res.json({
+        success: true,
+        message: 'Logo perusahaan berhasil dihapus.'
+      });
+    } catch (error) { next(error); }
   }
 };
 

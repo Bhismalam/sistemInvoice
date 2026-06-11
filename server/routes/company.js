@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const companyController = require('../controllers/companyController');
+const upload = require('../middleware/upload');
 const { authenticate } = require('../middleware/auth');
 const { checkPermission, requireOwner } = require('../middleware/rbac');
 
@@ -10,6 +11,8 @@ router.use(authenticate);
 // === Company Profile ===
 router.get('/', companyController.getCompany);
 router.put('/', checkPermission('update:company_settings'), companyController.updateCompany);
+router.post('/logo', checkPermission('update:company_settings'), upload.single('logo'), companyController.uploadLogo);
+router.delete('/logo', checkPermission('update:company_settings'), companyController.deleteLogo);
 
 // === Members ===
 router.get('/members', companyController.getMembers);
