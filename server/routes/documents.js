@@ -11,6 +11,8 @@ router.post('/:id/pay', checkPermission('update:document'), documentController.p
 router.post('/:id/cancel', checkPermission('update:document'), documentController.cancelDocument);
 router.patch('/:id/status', checkPermission('update:document'), documentController.updateStatus);
 router.get('/:id', checkPermission('read:document'), documentController.getById);
+router.get('/:id/pdf', checkPermission('read:document'), documentController.downloadPDF);
+router.post('/:id/send-email', checkPermission('update:document'), documentController.sendInvoiceEmail);
 router.put('/:id', checkPermission('update:document'), documentController.update);
 router.delete('/:id', checkPermission('delete:document'), documentController.delete);
 
