@@ -221,6 +221,7 @@ async function renderProfileTab(content, page) {
 
   const apiBase = import.meta.env.VITE_API_URL || '/api';
   const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+  const serverBase = cleanApiBase.replace(/\/api$/, '');
 
   content.innerHTML = `
     <form id="company-profile-form" class="settings-form card">
@@ -232,7 +233,7 @@ async function renderProfileTab(content, page) {
         <div style="display:flex;align-items:center;gap:var(--space-lg);margin-top:8px">
           <div id="company-logo-preview" style="width:120px;height:70px;border-radius:var(--radius-sm);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg-primary);position:relative">
             ${c.logo ? `
-              <img src="${cleanApiBase}${c.logo}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain" />
+              <img src="${serverBase}${c.logo}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain" />
             ` : `
               <span class="text-muted" style="font-size:0.75rem;font-weight:600">BELUM ADA LOGO</span>
             `}
