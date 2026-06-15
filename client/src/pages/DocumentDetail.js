@@ -136,6 +136,11 @@ export function renderDocumentDetail(container, routeParams = {}) {
                   <iconify-icon icon="lucide:mail" width="16" height="16" style="vertical-align:-2px;margin-right:6px"></iconify-icon> Kirim via Email
                 </button>
               ` : ''}
+                ${(doc.status === 'sent' || doc.status === 'overdue' || doc.status === 'paid') && isSales ? `
+                  <button class="btn w-full" id="btn-send-wa" style="margin-bottom:var(--space-xs); background:#25D366; color:#ffffff; border:none; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <iconify-icon icon="logos:whatsapp-icon" width="16" height="16"></iconify-icon> Kirim via WhatsApp
+                  </button>
+                ` : ''}
               ${(doc.status === 'sent' || doc.status === 'overdue') && isInvoice && isSales ? `
                 <div class="payment-method-box">
                   <p class="form-label" style="margin-bottom:var(--space-sm)">Metode Pembayaran</p>
@@ -476,6 +481,11 @@ export function renderDocumentDetail(container, routeParams = {}) {
     document.getElementById('btn-resend-email')?.addEventListener('click', () => {
       showEmailModal(doc);
     });
+
+      // Send WhatsApp event listener
+      document.getElementById('btn-send-wa')?.addEventListener('click', () => {
+        showWhatsAppModal(doc);
+      });
 
     // PDF download event listener
     document.getElementById('btn-pdf')?.addEventListener('click', async () => {
