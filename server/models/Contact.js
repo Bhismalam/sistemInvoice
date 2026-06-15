@@ -7,6 +7,7 @@ const contactSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, default: '' },
   phone: { type: String, default: '' },
+  whatsapp_number: { type: String, default: null },
   address: { type: String, default: null },
   notes: { type: String, default: null }
 }, {

@@ -221,7 +221,8 @@ export function renderDocumentDetail(container, routeParams = {}) {
         </div>
       </div>
     </div>
-    <div id="email-modal-portal"></div>`;
+    <div id="email-modal-portal"></div>
+    <div id="wa-modal-portal"></div>`;
 
     // Load payment reminders if invoice
     if (isInvoice) {
@@ -229,6 +230,162 @@ export function renderDocumentDetail(container, routeParams = {}) {
     }
 
     // Helper function to show Email Modal
+    
+    // Helper function to show WhatsApp Modal
+    function showWhatsAppModal(docData) {
+      const portal = document.getElementById('wa-modal-portal');
+      if (!portal) return;
+
+      const businessName = JSON.parse(sessionStorage.getItem('user') || '{}').business_name || 'InvoiceFlow';
+      const contactPhone = docData.contact_phone || '';
+      
+      const typeLabel = docData.document_type === 'invoice' ? 'INVOICE' : 'ORDER';
+      const totalFormatted = formatCurrency(docData.total);
+      const dueDate = formatDate(docData.due_date);
+
+      let defaultMessage = `📄 *${typeLabel} BARU*\n\n`;
+      defaultMessage += `Halo ${docData.contact_name || 'Pelanggan'},\n\n`;
+      defaultMessage += `Berikut ${typeLabel.toLowerCase()} dari *${businessName}*:\n\n`;
+      defaultMessage += `📋 No: ${docData.document_number}\n`;
+      defaultMessage += `💰 Total: *${totalFormatted}*\n`;
+      defaultMessage += `📅 Jatuh Tempo: ${dueDate}\n`;
+
+      if (docData.payment_link) {
+        const paymentUrl = `${window.location.origin}/#/pay/${docData.payment_link}`;
+        defaultMessage += `\n🔗 Lihat & Bayar: ${paymentUrl}\n`;
+      }
+
+      defaultMessage += `\nTerima kasih! 🙏\n— ${businessName}`;
+
+      portal.innerHTML = `
+        <div class="modal-overlay" id="wa-modal-bg">
+          <div class="modal-content" style="max-width:550px">
+            <div class="modal-header">
+              <h2 class="modal-title" style="display:flex;align-items:center;gap:8px">
+                <iconify-icon icon="logos:whatsapp-icon" width="22" height="22"></iconify-icon>
+                Kirim via WhatsApp
+              </h2>
+              <button class="modal-close" id="wa-modal-close">×</button>
+            </div>
+            <form id="wa-form">
+              <div class="form-group">
+                <label class="form-label">Nomor WhatsApp Tujuan</label>
+                <input type="text" class="form-input" id="wa-phone" value="${contactPhone}" required placeholder="contoh: 081234567890" />
+                <p class="text-muted" style="font-size:0.75rem;margin-top:4px">Format: 08xxx, +628xxx, atau 628xxx</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pratinjau Pesan</label>
+                <textarea class="form-input" id="wa-message" rows="8" required style="resize:vertical;font-family:inherit;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);padding:10px;border-radius:4px">${defaultMessage}</textarea>
+              </div>
+              
+              <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-sm) var(--space-base);margin-bottom:var(--space-xl);display:flex;align-items:center;gap:var(--space-sm)" id="wa-pdf-attachment-info">
+                <iconify-icon icon="lucide:file-text" width="20" height="20" style="color:var(--accent-primary)"></iconify-icon>
+                <div>
+                  <p style="font-size:0.85rem;font-weight:600;margin:0">${docData.document_number.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf</p>
+                  <p class="text-muted" style="font-size:0.75rem;margin:0">Lampiran dokumen PDF (jika dikirim dengan opsi PDF)</p>
+                </div>
+              </div>
+              
+              <div id="wa-status-message" class="wa-status" style="display:none;margin-bottom:var(--space-md);padding:var(--space-sm);border-radius:var(--radius-sm);font-size:0.85rem"></div>
+
+              <div class="flex gap-md" style="margin-top:var(--space-lg)">
+                <button type="button" class="btn btn-primary" id="wa-send-pdf-btn" style="background:#25D366;border-color:#25D366;color:#ffffff">Kirim PDF + Pesan</button>
+                <button type="button" class="btn btn-secondary" id="wa-send-text-btn">Kirim Teks Saja</button>
+                <button type="button" class="btn btn-ghost" id="wa-modal-cancel">Batal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+
+      const close = () => { portal.innerHTML = ''; };
+      document.getElementById('wa-modal-close').addEventListener('click', close);
+      document.getElementById('wa-modal-cancel').addEventListener('click', close);
+      document.getElementById('wa-modal-bg').addEventListener('click', e => { if (e.target === e.currentTarget) close(); });
+
+      let isSending = false;
+      const statusEl = document.getElementById('wa-status-message');
+
+      const setStatus = (msg, type) => {
+        statusEl.style.display = 'block';
+        statusEl.textContent = msg;
+        if (type === 'loading') {
+          statusEl.style.background = 'rgba(59, 130, 246, 0.1)';
+          statusEl.style.color = '#3b82f6';
+          statusEl.style.border = '1px solid rgba(59, 130, 246, 0.2)';
+        } else if (type === 'success') {
+          statusEl.style.background = 'rgba(16, 185, 129, 0.1)';
+          statusEl.style.color = '#10b981';
+          statusEl.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+        } else if (type === 'error') {
+          statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+          statusEl.style.color = '#ef4444';
+          statusEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        }
+      };
+
+      // Handle Kirim PDF
+      document.getElementById('wa-send-pdf-btn').addEventListener('click', async () => {
+        if (isSending) return;
+        const phone = document.getElementById('wa-phone').value.trim();
+        if (!phone) { showToast('Masukkan nomor WhatsApp tujuan!', 'error'); return; }
+
+        isSending = true;
+        const btn = document.getElementById('wa-send-pdf-btn');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Mengirim...';
+        setStatus('Sedang membuat PDF & mengirim via WhatsApp...', 'loading');
+
+        try {
+          const response = await api(`/whatsapp/send-invoice/${docData.id}`, {
+            method: 'POST',
+            body: { phoneNumber: phone }
+          });
+          setStatus(response.message || 'Invoice berhasil dikirim via WhatsApp!', 'success');
+          showToast(response.message || 'Invoice terkirim via WhatsApp!', 'success');
+          setTimeout(() => { close(); window.location.reload(); }, 2000);
+        } catch (err) {
+          setStatus('Gagal: ' + err.message, 'error');
+          showToast('Gagal mengirim: ' + err.message, 'error');
+          btn.disabled = false;
+          btn.textContent = originalText;
+          isSending = false;
+        }
+      });
+
+      // Handle Kirim Teks Saja
+      document.getElementById('wa-send-text-btn').addEventListener('click', async () => {
+        if (isSending) return;
+        const phone = document.getElementById('wa-phone').value.trim();
+        const message = document.getElementById('wa-message').value.trim();
+        if (!phone) { showToast('Masukkan nomor WhatsApp tujuan!', 'error'); return; }
+
+        isSending = true;
+        const btn = document.getElementById('wa-send-text-btn');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Mengirim...';
+        setStatus('Sedang mengirim rincian via WhatsApp...', 'loading');
+
+        try {
+          const response = await api(`/whatsapp/send-text/${docData.id}`, {
+            method: 'POST',
+            body: { phoneNumber: phone, customMessage: message }
+          });
+          setStatus(response.message || 'Rincian invoice berhasil dikirim!', 'success');
+          showToast(response.message || 'Rincian invoice terkirim!', 'success');
+          setTimeout(() => { close(); window.location.reload(); }, 2000);
+        } catch (err) {
+          setStatus('Gagal: ' + err.message, 'error');
+          showToast('Gagal mengirim: ' + err.message, 'error');
+          btn.disabled = false;
+          btn.textContent = originalText;
+          isSending = false;
+        }
+      });
+    }
+
     function showEmailModal(docData) {
       const portal = document.getElementById('email-modal-portal');
       if (!portal) return;

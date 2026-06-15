@@ -23,6 +23,7 @@ const { dashboardRouter, reportRouter, settingsRouter } = require('./routes/dash
 const documentController = require('./controllers/documentController');
 
 const notificationRoutes = require('./routes/notifications');
+const whatsappRoutes = require('./routes/whatsapp');
 
 const app = express();
 
@@ -95,6 +96,7 @@ app.use('/api/dashboard', authenticate, dashboardRouter);
 app.use('/api/reports', authenticate, reportRouter);
 app.use('/api/settings', authenticate, settingsRouter);
 app.use('/api/notifications', authenticate, notificationRoutes);
+app.use('/api/whatsapp', authenticate, whatsappRoutes);
 app.use('/api/company', companyRoutes); // Company routes handle their own auth internally
 
 // === BACKGROUND SCHEDULER === (skip in test mode)
