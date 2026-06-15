@@ -73,8 +73,25 @@ async function generateInvoicePDF(docData) {
         }
       }
 
+      let logoHeight = 0;
+      let logoWidth = 100;
       if (logoPath) {
-        pdf.image(logoPath, 50, 45, { width: 100 });
+        try {
+          const img = pdf.openImage(logoPath);
+          const scaleW = 100 / img.width;
+          const scaleH = 70 / img.height;
+          const scale = Math.min(scaleW, scaleH);
+          logoWidth = img.width * scale;
+          logoHeight = img.height * scale;
+        } catch (err) {
+          console.error('Failed to calculate logo height:', err);
+          logoHeight = 50;
+          logoWidth = 100;
+        }
+      }
+
+      if (logoPath) {
+        pdf.image(logoPath, 50, 45, { width: logoWidth, height: logoHeight });
       } else {
         pdf.fontSize(18).fillColor('#1e293b').font('Helvetica-Bold').text(businessName || 'INVOICEFLOW', 50, 45);
       }
@@ -98,29 +115,31 @@ async function generateInvoicePDF(docData) {
         pdf.text(`NPWP: ${npwp}`, 200, nextY, { align: 'right' });
       }
 
-      pdf.strokeColor('#e2e8f0').lineWidth(1).moveTo(50, 115).lineTo(545, 115).stroke();
+      // Dynamically calculate divider line position based on logo/text height
+      const headerBottomY = logoPath ? Math.max(110, 45 + logoHeight + 10) : 110;
+      pdf.strokeColor('#e2e8f0').lineWidth(1).moveTo(50, headerBottomY).lineTo(545, headerBottomY).stroke();
 
       // 2. Invoice Details (Title & Metas)
       const docTypeLabel = docData.document_type === 'order' ? 'ORDER' : 'INVOICE';
       const docTransLabel = docData.transaction_type === 'sales' ? 'PENJUALAN' : 'PEMBELIAN';
       
-      pdf.fillColor('#0f172a').font('Helvetica-Bold').fontSize(18).text(`${docTypeLabel} ${docTransLabel}`, 50, 130);
+      pdf.fillColor('#0f172a').font('Helvetica-Bold').fontSize(18).text(`${docTypeLabel} ${docTransLabel}`, 50, headerBottomY + 15);
       
       // Metadata (right column)
-      pdf.fontSize(9).font('Helvetica-Bold').fillColor('#64748b').text('Nomor Dokumen:', 350, 130);
-      pdf.font('Helvetica-Bold').fillColor('#0f172a').text(docData.document_number, 450, 130, { align: 'right' });
+      pdf.fontSize(9).font('Helvetica-Bold').fillColor('#64748b').text('Nomor Dokumen:', 350, headerBottomY + 15);
+      pdf.font('Helvetica-Bold').fillColor('#0f172a').text(docData.document_number, 450, headerBottomY + 15, { align: 'right' });
 
-      pdf.font('Helvetica-Bold').fillColor('#64748b').text('Tanggal Terbit:', 350, 145);
-      pdf.font('Helvetica').fillColor('#0f172a').text(formatDate(docData.issue_date), 450, 145, { align: 'right' });
+      pdf.font('Helvetica-Bold').fillColor('#64748b').text('Tanggal Terbit:', 350, headerBottomY + 30);
+      pdf.font('Helvetica').fillColor('#0f172a').text(formatDate(docData.issue_date), 450, headerBottomY + 30, { align: 'right' });
 
-      pdf.font('Helvetica-Bold').fillColor('#64748b').text('Tanggal Jatuh Tempo:', 350, 160);
-      pdf.font('Helvetica').fillColor('#0f172a').text(formatDate(docData.due_date), 450, 160, { align: 'right' });
+      pdf.font('Helvetica-Bold').fillColor('#64748b').text('Tanggal Jatuh Tempo:', 350, headerBottomY + 45);
+      pdf.font('Helvetica').fillColor('#0f172a').text(formatDate(docData.due_date), 450, headerBottomY + 45, { align: 'right' });
 
       // Client Info (Billed To)
-      pdf.fontSize(9).font('Helvetica-Bold').fillColor('#64748b').text('DITAGIHKAN KEPADA:', 50, 175);
-      pdf.font('Helvetica-Bold').fillColor('#0f172a').fontSize(11).text(docData.contact_name || '-', 50, 190);
+      pdf.fontSize(9).font('Helvetica-Bold').fillColor('#64748b').text('DITAGIHKAN KEPADA:', 50, headerBottomY + 60);
+      pdf.font('Helvetica-Bold').fillColor('#0f172a').fontSize(11).text(docData.contact_name || '-', 50, headerBottomY + 75);
       
-      let clientNextY = 205;
+      let clientNextY = headerBottomY + 90;
       if (docData.contact_address) {
         pdf.font('Helvetica').fontSize(9).fillColor('#64748b').text(docData.contact_address, 50, clientNextY, { width: 250 });
         const addrHeight = pdf.heightOfString(docData.contact_address, { width: 250 });
@@ -130,7 +149,7 @@ async function generateInvoicePDF(docData) {
       pdf.font('Helvetica').fontSize(9).fillColor('#64748b').text(`Email: ${docData.contact_email || '-'} | Telp: ${docData.contact_phone || '-'}`, 50, clientNextY);
 
       // 3. Table of items
-      let startY = 265;
+      let startY = headerBottomY + 150;
       pdf.strokeColor('#0f172a').lineWidth(1.5).moveTo(50, startY).lineTo(545, startY).stroke();
       
       // Headers
