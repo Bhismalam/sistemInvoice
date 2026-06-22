@@ -78,7 +78,7 @@ class WhatsAppService {
 
     return {
       success: true,
-      messageId: result.id || null,
+      messageId: Array.isArray(result.id) ? result.id.join(',') : (result.id ? String(result.id) : null),
       detail: result
     };
   }
@@ -125,7 +125,7 @@ class WhatsAppService {
 
     return {
       success: true,
-      messageId: result.id || null,
+      messageId: Array.isArray(result.id) ? result.id.join(',') : (result.id ? String(result.id) : null),
       detail: result
     };
   }
