@@ -430,6 +430,7 @@ export function renderDocumentDetail(container, routeParams = {}) {
       const portal = document.getElementById('email-modal-portal');
       if (!portal) return;
 
+      const typeLabel = docData.document_type === 'invoice' ? 'INVOICE' : 'ORDER';
       const businessName = JSON.parse(sessionStorage.getItem('user') || '{}').business_name || 'InvoiceFlow';
       const companySession = JSON.parse(sessionStorage.getItem('company') || '{}');
       
