@@ -1,85 +1,91 @@
-const { getPool } = require('../config/database');
+const mongoose = require('mongoose');
 
-const User = {
-  async create({ name, email, phone, password_hash }) {
-    const pool = getPool();
-    const [result] = await pool.execute(
-      'INSERT INTO users (name, email, phone, password_hash) VALUES (?, ?, ?, ?)',
-      [name, email, phone || '', password_hash]
-    );
-    return this.findById(result.insertId);
-  },
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, default: '' },
+  password_hash: { type: String, required: true },
+  company_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  role_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null },
+  // Legacy business fields (kept for backward compatibility, will migrate to Company)
+  business_name: { type: String, default: '' },
+  business_logo: { type: String, default: null },
+  business_address: { type: String, default: null },
+  npwp: { type: String, default: '' },
+  invoice_prefix: { type: String, default: 'INV' },
+  invoice_counter: { type: Number, default: 0 },
+  default_tax_percent: { type: Number, default: 11 },
+  notifications_read_at: { type: Date, default: Date.now },
+  reset_password_token: { type: String, default: null },
+  reset_password_expires: { type: Date, default: null },
+  otp_code: { type: String, default: null },
+  otp_expires: { type: Date, default: null },
+  refresh_tokens: [{
+    token: String,
+    expires_at: Date
+  }]
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
 
-  async findById(id) {
-    const pool = getPool();
-    const [rows] = await pool.execute(
-      `SELECT id, name, email, phone, business_name, business_logo,
-              business_address, npwp, invoice_prefix, invoice_counter,
-              default_tax_percent, created_at
-       FROM users WHERE id = ?`,
-      [id]
-    );
-    return rows[0] || null;
+// Virtual for 'id' so frontend doesn't break
+userSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
+userSchema.set('toJSON', { 
+  virtuals: true,
+  transform: function(doc, ret) {
+    delete ret.password_hash;
+    delete ret.refresh_tokens;
+    return ret;
+  }
+});
+userSchema.set('toObject', { virtuals: true });
+
+const User = mongoose.model('User', userSchema);
+
+const UserModel = {
+  async create(data) {
+    const user = new User(data);
+    await user.save();
+    return user;
   },
 
   async findByEmail(email) {
-    const pool = getPool();
-    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
-    return rows[0] || null;
+    return User.findOne({ email });
+  },
+
+  async findById(id) {
+    return User.findById(id);
   },
 
   async update(id, data) {
-    const pool = getPool();
-    const fields = [];
-    const values = [];
-    const allowed = ['name', 'phone', 'business_name', 'business_logo',
-      'business_address', 'npwp', 'invoice_prefix', 'default_tax_percent'];
-
-    for (const key of allowed) {
-      if (data[key] !== undefined) {
-        fields.push(`${key} = ?`);
-        values.push(data[key]);
-      }
-    }
-    if (fields.length === 0) return this.findById(id);
-
-    values.push(id);
-    await pool.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
-    return this.findById(id);
+    return User.findByIdAndUpdate(id, data, { new: true });
   },
 
-  async incrementInvoiceCounter(id) {
-    const pool = getPool();
-    await pool.execute('UPDATE users SET invoice_counter = invoice_counter + 1 WHERE id = ?', [id]);
-    const [rows] = await pool.execute('SELECT invoice_prefix, invoice_counter FROM users WHERE id = ?', [id]);
-    return rows[0];
+  async saveRefreshToken(userId, token, expiresAt) {
+    await User.findByIdAndUpdate(userId, {
+      $push: { refresh_tokens: { token, expires_at: expiresAt } }
+    });
   },
 
-  async markNotificationsRead(id) {
-    const pool = getPool();
-    await pool.execute('UPDATE users SET notifications_read_at = NOW() WHERE id = ?', [id]);
+  async verifyRefreshToken(token) {
+    const user = await User.findOne({ 'refresh_tokens.token': token });
+    if (!user) return null;
+    const tokenRecord = user.refresh_tokens.find(rt => rt.token === token);
+    if (new Date() > tokenRecord.expires_at) return null;
+    return user;
+  },
+
+  async clearRefreshToken(userId, token) {
+    await User.findByIdAndUpdate(userId, {
+      $pull: { refresh_tokens: { token } }
+    });
+  },
+
+  async updateReadTimestamp(userId) {
+    await User.findByIdAndUpdate(userId, { notifications_read_at: new Date() });
   }
 };
 
-// Refresh token helpers
-const RefreshToken = {
-  async create(userId, token, expiresAt) {
-    const pool = getPool();
-    await pool.execute('INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [userId, token, expiresAt]);
-  },
-  async find(token) {
-    const pool = getPool();
-    const [rows] = await pool.execute('SELECT * FROM refresh_tokens WHERE token = ? AND expires_at > NOW()', [token]);
-    return rows[0] || null;
-  },
-  async delete(token) {
-    const pool = getPool();
-    await pool.execute('DELETE FROM refresh_tokens WHERE token = ?', [token]);
-  },
-  async deleteAllForUser(userId) {
-    const pool = getPool();
-    await pool.execute('DELETE FROM refresh_tokens WHERE user_id = ?', [userId]);
-  }
-};
-
-module.exports = { User, RefreshToken };
+module.exports = { User, ...UserModel };

@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-06-11T03:42:22.113Z",
+  "to": "test-recipient@example.com",
+  "subject": "Invoice Test",
+  "text": "Berikut lampiran invoice tagihan Anda.",
+  "html": "\n        <div style=\"font-family: sans-serif; max-width: 600px; color: #334155; line-height: 1.6;\">\n          <p>Berikut lampiran invoice tagihan Anda.</p>\n        </div>\n      ",
+  "attachment_file": "invoice_SO-202605-1055.pdf"
+}

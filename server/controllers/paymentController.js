@@ -1,7 +1,7 @@
 const midtransClient = require('midtrans-client');
 const Document = require('../models/Document');
 const Receipt = require('../models/Receipt');
-const { getPool } = require('../config/database');
+
 
 // Create Core API instance
 let snap = new midtransClient.Snap({
@@ -55,7 +55,7 @@ const paymentController = {
       // Extrapolate doc id from orderId: INV-{doc.id}-{timestamp}
       const parts = orderId.split('-');
       if (parts.length < 3) return res.status(400).send('Invalid Order ID');
-      const docId = parseInt(parts[1]);
+      const docId = parts[1];
 
       if (transactionStatus === 'capture') {
         if (fraudStatus === 'accept') {
@@ -83,7 +83,7 @@ const paymentController = {
       if (statusResponse.transaction_status === 'settlement' || statusResponse.transaction_status === 'capture') {
         const parts = orderId.split('-');
         if (parts.length >= 3) {
-          const docId = parseInt(parts[1]);
+          const docId = parts[1];
           await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
         }
       }
@@ -166,20 +166,22 @@ async function createMidtransTransaction(doc) {
   const transaction = await snap.createTransaction(parameter);
   
   // SAVE TOKEN TO DATABASE FOR CACHING
-  const pool = getPool();
-  await pool.execute('UPDATE documents SET midtrans_token = ? WHERE id = ?', [transaction.token, doc.id]);
+  const mongoose = require('mongoose');
+  const DocumentModel = mongoose.model('Document');
+  await DocumentModel.updateOne({ _id: doc.id }, { midtrans_token: transaction.token });
   
   return { token: transaction.token, redirect_url: transaction.redirect_url };
 }
 
 async function markAsPaid(docId, amount, paymentMethod) {
-  const pool = getPool();
-  const [rows] = await pool.execute('SELECT * FROM documents WHERE id = ?', [docId]);
-  const doc = rows[0];
+  const mongoose = require('mongoose');
+  const DocumentModel = mongoose.model('Document');
+  const doc = await DocumentModel.findById(docId);
+  
   if (doc && doc.status !== 'paid') {
     await Receipt.create({
       user_id: doc.user_id,
-      document_id: doc.id,
+      document_id: doc._id,
       receipt_number: `MDTR-${Date.now()}`,
       amount: parseFloat(amount),
       payment_method: paymentMethod || 'midtrans',

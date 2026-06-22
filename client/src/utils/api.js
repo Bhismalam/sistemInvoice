@@ -1,39 +1,70 @@
 // API Client — centralized fetch wrapper with JWT auth
-const BASE_URL = '/api';
+let BASE_URL = import.meta.env.VITE_API_URL || '/api';
+if (BASE_URL.endsWith('/')) {
+  BASE_URL = BASE_URL.slice(0, -1);
+}
 
-let accessToken = localStorage.getItem('accessToken') || '';
-let refreshToken = localStorage.getItem('refreshToken') || '';
+let accessToken = sessionStorage.getItem('accessToken') || '';
+let refreshToken = sessionStorage.getItem('refreshToken') || '';
 
 export function setTokens(access, refresh) {
   accessToken = access;
   refreshToken = refresh;
-  localStorage.setItem('accessToken', access);
-  localStorage.setItem('refreshToken', refresh);
+  sessionStorage.setItem('accessToken', access);
+  sessionStorage.setItem('refreshToken', refresh);
 }
 
 export function clearTokens() {
   accessToken = '';
   refreshToken = '';
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('user');
+  sessionStorage.removeItem('company');
 }
 
 export function getAccessToken() { return accessToken; }
 
+let isRefreshing = false;
+let refreshQueue = [];
+
 async function refreshAccessToken() {
+  const currentRefreshToken = sessionStorage.getItem('refreshToken') || refreshToken;
+  if (!currentRefreshToken) {
+    clearTokens();
+    window.location.hash = '#/login';
+    return false;
+  }
+
+  if (isRefreshing) {
+    return new Promise((resolve) => {
+      refreshQueue.push(resolve);
+    });
+  }
+
+  isRefreshing = true;
+
   try {
     const res = await fetch(`${BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
+      body: JSON.stringify({ refreshToken: currentRefreshToken })
     });
     if (!res.ok) throw new Error('Refresh failed');
     const data = await res.json();
     accessToken = data.data.accessToken;
-    localStorage.setItem('accessToken', accessToken);
+    sessionStorage.setItem('accessToken', accessToken);
+    
+    // Resolve all waiting requests in the queue with true
+    refreshQueue.forEach(resolve => resolve(true));
+    refreshQueue = [];
+    isRefreshing = false;
     return true;
   } catch {
+    // Resolve all waiting requests in the queue with false
+    refreshQueue.forEach(resolve => resolve(false));
+    refreshQueue = [];
+    isRefreshing = false;
     clearTokens();
     window.location.hash = '#/login';
     return false;
@@ -42,10 +73,11 @@ async function refreshAccessToken() {
 
 export async function api(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
+  const currentAccessToken = sessionStorage.getItem('accessToken') || accessToken;
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+      ...(currentAccessToken && { 'Authorization': `Bearer ${currentAccessToken}` }),
       ...options.headers
     },
     ...options
@@ -63,10 +95,12 @@ export async function api(endpoint, options = {}) {
 
   // Auto refresh on 401
   if (res.status === 401) {
-    if (refreshToken) {
+    const currentRefreshToken = sessionStorage.getItem('refreshToken') || refreshToken;
+    if (currentRefreshToken) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        config.headers['Authorization'] = `Bearer ${accessToken}`;
+        const latestAccessToken = sessionStorage.getItem('accessToken') || accessToken;
+        config.headers['Authorization'] = `Bearer ${latestAccessToken}`;
         res = await fetch(url, config);
       } else {
         clearTokens();

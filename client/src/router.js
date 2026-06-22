@@ -1,14 +1,30 @@
 // Toast notification system
 export function showToast(message, type = 'info', duration = 4000) {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-  toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
+  
+  const icons = {
+    success: 'lucide:check-circle',
+    error: 'lucide:alert-circle',
+    warning: 'lucide:alert-triangle',
+    info: 'lucide:info'
+  };
+  const icon = icons[type] || 'lucide:info';
+  
+  toast.innerHTML = `
+    <span class="toast-icon"><iconify-icon icon="${icon}" width="18" height="18"></iconify-icon></span>
+    <span class="toast-message">${message}</span>
+    <button class="toast-close" onclick="this.parentElement.classList.add('removing'); setTimeout(() => this.parentElement.remove(), 250);"><iconify-icon icon="lucide:x" width="14" height="14"></iconify-icon></button>
+  `;
   container.appendChild(toast);
+  
   setTimeout(() => {
-    toast.classList.add('removing');
-    setTimeout(() => toast.remove(), 300);
+    if (toast.parentElement) {
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 250);
+    }
   }, duration);
 }
 
@@ -35,7 +51,7 @@ export class Router {
     // Check auth
     const publicRoutes = ['/login', '/register', '/forgot-password', '/pay'];
     const isPublic = publicRoutes.some(r => firstSegment.startsWith(r));
-    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const isLoggedIn = !!sessionStorage.getItem('accessToken');
 
     if (!isPublic && !isLoggedIn) {
       window.location.hash = '#/login';

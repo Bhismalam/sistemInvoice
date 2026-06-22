@@ -22,6 +22,14 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  // Mongoose invalid ObjectId errors
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    return res.status(404).json({
+      success: false,
+      message: 'Data tidak ditemukan.'
+    });
+  }
+
   // Multer file upload errors
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({

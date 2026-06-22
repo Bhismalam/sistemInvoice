@@ -1,0 +1,441 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pratinjau Desain Invoice PDF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e293b;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --text: #334155;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --status-unpaid: #e11d48;
+      --status-unpaid-bg: #fff1f2;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .info-header {
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .info-header h1 {
+      font-size: 1.5rem;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .info-header p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Outer Invoice Container - Simulates A4 page */
+    .invoice-container {
+      width: 100%;
+      max-width: 800px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+      padding: 50px;
+      position: relative;
+    }
+
+    /* Header Section */
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+
+    .logo-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .logo-placeholder {
+      width: 120px;
+      height: 45px;
+      background-color: var(--accent-light);
+      border: 2px dashed var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .company-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .company-details {
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 300px;
+    }
+
+    .company-details h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background-color: var(--border);
+      margin-bottom: 30px;
+    }
+
+    /* Meta Details (Invoice Title & Info) */
+    .invoice-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 35px;
+    }
+
+    .title-section h3 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background-color: var(--status-unpaid-bg);
+      color: var(--status-unpaid);
+      border: 1px solid rgba(225, 29, 72, 0.15);
+    }
+
+    .meta-details {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 8px 20px;
+      font-size: 0.9rem;
+    }
+
+    .meta-details dt {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .meta-details dd {
+      color: var(--text-dark);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Client Info */
+    .client-section {
+      margin-bottom: 35px;
+      font-size: 0.9rem;
+    }
+
+    .client-section h4 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .client-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .client-address {
+      color: var(--text-muted);
+      max-width: 400px;
+      margin-bottom: 4px;
+    }
+
+    .client-contact {
+      color: var(--text-muted);
+    }
+
+    /* Items Table */
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      font-size: 0.9rem;
+    }
+
+    .invoice-table th {
+      background-color: var(--bg-page);
+      font-weight: 600;
+      color: var(--text-dark);
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .invoice-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .invoice-table tr:last-child td {
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .text-right {
+      text-align: right !important;
+    }
+
+    .text-center {
+      text-align: center !important;
+    }
+
+    .item-description {
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+
+    /* Summary Section */
+    .summary-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+    }
+
+    .payment-info {
+      max-width: 320px;
+      background-color: var(--bg-page);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .payment-info h5 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .payment-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .payment-info strong {
+      color: var(--text-dark);
+    }
+
+    .totals-box {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .totals-row.grand-total {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Footer Notes */
+    .invoice-footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="info-header">
+    <h1>Pratinjau Desain Invoice PDF</h1>
+    <p>File ini adalah visualisasi representatif dari PDF yang akan di-generate oleh server secara otomatis.</p>
+  </div>
+
+  <div class="invoice-container">
+    
+    <!-- HEADER -->
+    <div class="invoice-header">
+      <div class="logo-section">
+        <!-- Jika ada logo diunggah -->
+        <div class="logo-placeholder">LOGO ANDA</div>
+        <!-- Nama Perusahaan Fallback -->
+        <div class="company-name">PT Kode Sukses Bersama</div>
+      </div>
+      <div class="company-details">
+        <h2>PT Kode Sukses Bersama</h2>
+        <p>Jl. Jenderal Sudirman Kav. 21, Jakarta Selatan</p>
+        <p>Telp: (021) 555-0199 | Email: billing@kodesukses.com</p>
+        <p>NPWP: 01.234.567.8-012.000</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- META DETAILS -->
+    <div class="invoice-meta">
+      <div class="title-section">
+        <h3>INVOICE PENJUALAN</h3>
+        <span class="badge-status">Belum Dibayar</span>
+      </div>
+      <dl class="meta-details">
+        <dt>No. Invoice</dt>
+        <dd>INV/2026/06001</dd>
+        <dt>Tanggal Terbit</dt>
+        <dd>11 Juni 2026</dd>
+        <dt>Jatuh Tempo</dt>
+        <dd>25 Juni 2026</dd>
+      </dl>
+    </div>
+
+    <!-- CLIENT INFO -->
+    <div class="client-section">
+      <h4>Ditagihkan Kepada:</h4>
+      <div class="client-name">PT Maju Jaya Bersama</div>
+      <div class="client-address">Jl. Raya Industri No. 45 Blok C, Cikarang, Bekasi</div>
+      <div class="client-contact">Email: finance@majujaya.com | Telp: 0812-3456-7890</div>
+    </div>
+
+    <!-- TABLE -->
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th style="width: 8%;" class="text-center">No</th>
+          <th style="width: 52%;">Deskripsi Item</th>
+          <th style="width: 10%;" class="text-center">Qty</th>
+          <th style="width: 15%;" class="text-right">Harga Satuan</th>
+          <th style="width: 15%;" class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-center">1</td>
+          <td>
+            <div class="item-description">Jasa Pengembangan Website & Integrasi API</div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Pembuatan frontend berbasis SPA dan integrasi dashboard admin.</span>
+          </td>
+          <td class="text-center">1</td>
+          <td class="text-right">Rp10.000.000</td>
+          <td class="text-right" style="font-weight: 600; color: var(--text-dark);">Rp10.000.000</td>
+        </tr>
+        <tr>
+          <td class="text-center">2</td>
+          <td>
+            <div class="item-description">Maintenance Server Bulanan (Juni 2026)</div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Layanan pemeliharaan server cloud VPS dan optimasi database.</span>
+          </td>
+          <td class="text-center">2</td>
+          <td class="text-right">Rp1.500.000</td>
+          <td class="text-right" style="font-weight: 600; color: var(--text-dark);">Rp3.000.000</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- SUMMARY SECTION -->
+    <div class="summary-section">
+      <!-- Info Pembayaran Rekening -->
+      <div class="payment-info">
+        <h5>Informasi Pembayaran</h5>
+        <p>Silakan transfer pembayaran ke rekening resmi kami:</p>
+        <p style="margin-top: 8px;">Bank: <strong>Bank Central Asia (BCA)</strong></p>
+        <p>No. Rekening: <strong>800-987-6543</strong></p>
+        <p>Atas Nama: <strong>PT Kode Sukses Bersama</strong></p>
+      </div>
+
+      <!-- Kotak Total Akhir -->
+      <div class="totals-box">
+        <div class="totals-row">
+          <span>Subtotal</span>
+          <span>Rp13.000.000</span>
+        </div>
+        <div class="totals-row">
+          <span>Diskon</span>
+          <span>Rp0</span>
+        </div>
+        <div class="totals-row">
+          <span>PPN (11%)</span>
+          <span>Rp1.430.000</span>
+        </div>
+        <div class="totals-row grand-total">
+          <span>Total Akhir</span>
+          <span>Rp14.430.000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="invoice-footer">
+      <p>Terima kasih atas kerja sama dan kepercayaan Anda.</p>
+      <p style="font-size: 0.75rem; margin-top: 6px; color: var(--text-muted);">Dokumen ini sah dan diterbitkan secara digital oleh Sistem InvoiceFlow.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

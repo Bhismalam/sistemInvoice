@@ -4,8 +4,8 @@ const { User } = require('../models/User');
 const notificationController = {
   async getNotifications(req, res, next) {
     try {
-      const notifications = await ActivityLog.findAll(req.user.id, 20);
-      const unreadCount = await ActivityLog.countUnread(req.user.id);
+      const notifications = await ActivityLog.findAll(req.user.id, 20, req.user.company_id);
+      const unreadCount = await ActivityLog.countUnread(req.user.id, req.user.company_id);
 
       res.json({
         success: true,

@@ -18,19 +18,39 @@ const paymentRoutes = require('./routes/payments');
 const contactRoutes = require('./routes/contacts');
 const productRoutes = require('./routes/products');
 const debtRoutes = require('./routes/debts');
+const companyRoutes = require('./routes/company');
 const { dashboardRouter, reportRouter, settingsRouter } = require('./routes/dashboard');
 const documentController = require('./controllers/documentController');
 
 const notificationRoutes = require('./routes/notifications');
+const whatsappRoutes = require('./routes/whatsapp');
 
 const app = express();
 
 // === SECURITY MIDDLEWARE ===
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true
-}));
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    // In production, check against allowed origins
+    const allowedOrigins = process.env.CORS_ORIGIN 
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : ['http://localhost:5173'];
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight for all routes (important for Vercel serverless)
+app.options('*', cors(corsOptions));
 
 // Rate limiting (disabled in test mode)
 const isTest = process.env.NODE_ENV === 'test';
@@ -45,8 +65,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // === STATIC FILES (uploads) ===
-const uploadDir = path.resolve(__dirname, process.env.UPLOAD_DIR || './uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, process.env.UPLOAD_DIR || './uploads');
+try {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (e) {
+  console.warn('⚠️ Could not create upload directory (expected in serverless):', e.message);
+}
 app.use('/uploads', express.static(uploadDir));
 
 // === ROUTES ===
@@ -72,35 +96,41 @@ app.use('/api/dashboard', authenticate, dashboardRouter);
 app.use('/api/reports', authenticate, reportRouter);
 app.use('/api/settings', authenticate, settingsRouter);
 app.use('/api/notifications', authenticate, notificationRoutes);
+app.use('/api/whatsapp', authenticate, whatsappRoutes);
+app.use('/api/company', companyRoutes); // Company routes handle their own auth internally
 
 // === BACKGROUND SCHEDULER === (skip in test mode)
 if (process.env.NODE_ENV !== 'test') {
   const Document = require('./models/Document');
   const PaymentReminder = require('./models/PaymentReminder');
 
-  setInterval(async () => {
+  // Background scheduler for long-running servers (like Render/VPS)
+  if (!process.env.VERCEL) {
+    setInterval(async () => {
+      try {
+        const deleted = await Document.cleanupCancelledDocuments();
+        const overdue = await Document.markOverdueDocuments();
+        const reminders = await PaymentReminder.processPendingReminders();
+        if (deleted > 0 || overdue > 0 || reminders > 0) {
+          console.log(`⏰ Scheduler: ${deleted} cancelled deleted, ${overdue} marked overdue, ${reminders} reminders processed`);
+        }
+      } catch (err) {
+        console.error('Scheduler error:', err.message);
+      }
+    }, 60 * 60 * 1000);
+  }
+
+  // API Endpoint for Serverless environments (like Vercel Cron)
+  app.get('/api/cron', async (req, res) => {
     try {
       const deleted = await Document.cleanupCancelledDocuments();
       const overdue = await Document.markOverdueDocuments();
       const reminders = await PaymentReminder.processPendingReminders();
-      if (deleted > 0 || overdue > 0 || reminders > 0) {
-        console.log(`⏰ Scheduler: ${deleted} cancelled deleted, ${overdue} marked overdue, ${reminders} reminders processed`);
-      }
+      res.json({ success: true, deleted, overdue, reminders });
     } catch (err) {
-      console.error('Scheduler error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
     }
-  }, 60 * 60 * 1000);
-
-  setTimeout(async () => {
-    try {
-      await Document.cleanupCancelledDocuments();
-      await Document.markOverdueDocuments();
-      await PaymentReminder.processPendingReminders();
-      console.log('⏰ Initial scheduler run complete');
-    } catch (err) {
-      console.error('Initial scheduler error:', err.message);
-    }
-  }, 5000);
+  });
 }
 
 // === ERROR HANDLING ===

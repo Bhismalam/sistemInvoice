@@ -1,3 +1,4 @@
+import 'iconify-icon';
 import './styles/index.css';
 import './styles/auth.css';
 import './styles/layout.css';
@@ -14,6 +15,7 @@ if (isLightMode) {
 // Import pages
 import { renderLogin } from './pages/Login.js';
 import { renderRegister } from './pages/Register.js';
+import { renderForgotPassword } from './pages/ForgotPassword.js';
 import { renderDashboard } from './pages/Dashboard.js';
 import { renderDocumentList } from './pages/DocumentList.js';
 import { renderDocumentCreate } from './pages/DocumentCreate.js';
@@ -24,6 +26,7 @@ import { renderContacts } from './pages/Contacts.js';
 import { renderProducts } from './pages/Products.js';
 import { renderReports } from './pages/Reports.js';
 import { renderSettings } from './pages/Settings.js';
+import { renderCompanySettings } from './pages/CompanySettings.js';
 
 // Initialize Router
 const router = new Router();
@@ -31,6 +34,7 @@ const router = new Router();
 router
   .add('/login', renderLogin)
   .add('/register', renderRegister)
+  .add('/forgot-password', renderForgotPassword)
   .add('/dashboard', renderDashboard)
   // Sales routes
   .add('/sales/orders', (c) => renderDocumentList(c, { transactionType: 'sales', documentType: 'order' }))
@@ -54,6 +58,7 @@ router
   .add('/contacts', renderContacts)
   .add('/products', renderProducts)
   .add('/reports', renderReports)
-  .add('/settings', renderSettings);
+  .add('/settings', () => { window.location.hash = '#/company'; })
+  .add('/company', renderCompanySettings);
 
 router.start();

@@ -2,6 +2,7 @@ import { renderLayout } from '../components/Layout.js';
 import { api } from '../utils/api.js';
 import { formatCurrency } from '../utils/format.js';
 import { showToast } from '../router.js';
+import { showConfirm } from '../utils/confirm.js';
 
 export function renderProducts(container) {
   const page = renderLayout(container, 'products');
@@ -9,7 +10,7 @@ export function renderProducts(container) {
     <div class="page-header"><div><h1 class="page-title">Produk & Jasa</h1><p class="page-subtitle">Kelola katalog produk dan jasa</p></div>
       <button class="btn btn-primary" id="add-product">+ Tambah Produk</button></div>
     <div class="glass-card" style="padding:var(--space-xl)">
-      <input type="text" class="form-input" placeholder="🔍 Cari produk..." id="search-prod" style="max-width:300px;margin-bottom:var(--space-xl)" />
+      <input type="text" class="form-input" placeholder="Cari produk..." id="search-prod" style="max-width:300px;margin-bottom:var(--space-xl)" />
       <div id="product-list"><div class="page-loading"><div class="spinner"></div></div></div>
     </div><div id="prod-modal"></div></div>`;
 
@@ -24,9 +25,9 @@ export function renderProducts(container) {
         ${res.data.map(p => `<tr><td><strong>${p.name}</strong>${p.description ? `<br><span class="text-muted" style="font-size:0.8rem">${p.description}</span>` : ''}</td>
         <td><span class="badge badge-draft">${p.category || '-'}</span></td><td>${p.unit}</td><td style="text-align:right;font-weight:600">${formatCurrency(p.price)}</td>
         <td style="text-align:right"><span style="color:${p.stock < 10 ? 'var(--danger)' : 'var(--text-primary)'}">${p.stock}</span></td>
-        <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)">🗑️</button></td></tr>`).join('')}
-      </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon">📦</div><p class="empty-state__title">Belum ada produk</p></div>';
-      document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(confirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
+        <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:box" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada produk</p></div>';
+      document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(await showConfirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
     } catch(err) { document.getElementById('product-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }
 
@@ -43,10 +44,34 @@ export function renderProducts(container) {
     document.getElementById('m-close').addEventListener('click', close);
     document.getElementById('m-cancel').addEventListener('click', close);
     document.getElementById('m-bg').addEventListener('click', e => { if(e.target===e.currentTarget) close(); });
-    document.getElementById('prod-form').addEventListener('submit', async e => { e.preventDefault(); try {
-      await api('/products', {method:'POST', body:{name:document.getElementById('p-name').value,description:document.getElementById('p-desc').value,price:parseFloat(document.getElementById('p-price').value),stock:parseInt(document.getElementById('p-stock').value),unit:document.getElementById('p-unit').value,category:document.getElementById('p-cat').value}});
-      showToast('Produk ditambahkan!','success'); close(); load();
-    } catch(err){showToast(err.message,'error');}});
+    let isSubmitting = false;
+    document.getElementById('prod-form').addEventListener('submit', async e => { 
+      e.preventDefault(); 
+      if (isSubmitting) return;
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalHTML = submitBtn ? submitBtn.innerHTML : '';
+
+      isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;margin-right:8px;vertical-align:middle;display:inline-block"></span> Menyimpan...';
+      }
+
+      try {
+        await api('/products', {method:'POST', body:{name:document.getElementById('p-name').value,description:document.getElementById('p-desc').value,price:parseFloat(document.getElementById('p-price').value),stock:parseInt(document.getElementById('p-stock').value),unit:document.getElementById('p-unit').value,category:document.getElementById('p-cat').value}});
+        showToast('Produk ditambahkan!','success'); 
+        close(); 
+        load();
+      } catch(err) {
+        showToast(err.message,'error');
+        isSubmitting = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHTML;
+        }
+      }
+    });
   }
   load();
 }

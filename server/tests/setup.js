@@ -10,12 +10,16 @@ let pool;
  * Initialize the test database — call once per test suite
  */
 async function setupTestDB() {
-  // Override DB_NAME for test isolation
-  process.env.DB_NAME = process.env.DB_NAME || 'invoiceflow_test';
+  const mongoose = require('mongoose');
+  
   process.env.JWT_SECRET = 'test_jwt_secret_key_12345';
   process.env.JWT_REFRESH_SECRET = 'test_jwt_refresh_secret_key_12345';
   process.env.JWT_EXPIRES_IN = '1h';
   process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+
+  // Override MONGODB_URI to use a test database
+  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/invoiceflow';
+  process.env.MONGODB_URI = uri.replace(/\/[^/?]+(\?|$)/, '/invoiceflow_test$1');
 
   pool = await initDB();
   return pool;
@@ -25,21 +29,12 @@ async function setupTestDB() {
  * Clean all data from tables (keeps schema intact)
  */
 async function cleanDB() {
-  const p = getPool();
-  const conn = await p.getConnection();
-  try {
-    await conn.execute('SET FOREIGN_KEY_CHECKS = 0');
-    const tables = [
-      'payment_reminders', 'activity_logs', 'receipts',
-      'document_items', 'documents', 'products',
-      'contacts', 'refresh_tokens', 'users'
-    ];
-    for (const table of tables) {
-      await conn.execute(`TRUNCATE TABLE ${table}`);
-    }
-    await conn.execute('SET FOREIGN_KEY_CHECKS = 1');
-  } finally {
-    conn.release();
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) return;
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    const collection = collections[key];
+    await collection.deleteMany({});
   }
 }
 
@@ -47,8 +42,8 @@ async function cleanDB() {
  * Tear down — close pool
  */
 async function teardownTestDB() {
-  const p = getPool();
-  await p.end();
+  const mongoose = require('mongoose');
+  await mongoose.disconnect();
 }
 
 module.exports = { setupTestDB, cleanDB, teardownTestDB };
