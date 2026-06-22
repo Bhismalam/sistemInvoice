@@ -134,6 +134,7 @@ const Document = {
     const doc = await DocumentModelDB.findOne({ payment_link: paymentLink })
       .populate('contact_id')
       .populate('user_id', 'business_name business_logo business_address phone')
+      .populate('company_id')
       .populate('items.product_id', 'name unit');
 
     if (!doc) return null;
@@ -148,6 +149,16 @@ const Document = {
     result.business_address = result.user_id ? result.user_id.business_address : null;
     result.business_phone = result.user_id ? result.user_id.phone : null;
     result.user_id = result.user_id ? result.user_id._id.toString() : null;
+
+    result.company_name = doc.company_id?.name || null;
+    result.company_address = doc.company_id?.address || null;
+    result.company_phone = doc.company_id?.phone || null;
+    result.company_email = doc.company_id?.email || null;
+    result.company_npwp = doc.company_id?.npwp || null;
+    result.company_bank_name = doc.company_id?.bank_name || null;
+    result.company_bank_account_number = doc.company_id?.bank_account_number || null;
+    result.company_bank_account_name = doc.company_id?.bank_account_name || null;
+    result.company_logo = doc.company_id?.logo || null;
 
     result.items = result.items.map(item => ({
       ...item,

@@ -79,6 +79,19 @@ app.use('/uploads', express.static(uploadDir));
 app.use('/api/auth', authLimiter, authRoutes);
 app.get('/api/documents/public/:paymentLink', documentController.getPublic);
 
+// Public: Upload payment proof
+const multer = require('multer');
+const proofStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, process.env.UPLOAD_DIR || './uploads');
+    try { if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true }); } catch(e) {}
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => cb(null, `proof_${Date.now()}_${file.originalname}`)
+});
+const proofUpload = multer({ storage: proofStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+app.post('/api/documents/public/:paymentLink/upload-proof', proofUpload.single('proof'), documentController.uploadPaymentProof);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'InvoiceFlow API is running!', timestamp: new Date().toISOString() });

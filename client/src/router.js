@@ -96,7 +96,7 @@ export class Router {
     if (handler) {
       const content = document.getElementById('app');
       content.innerHTML = '';
-      const isAuthPage = ['/login', '/register', '/forgot-password'].includes(firstSegment);
+      const isAuthPage = ['/login', '/register', '/forgot-password', '/pay'].includes(firstSegment);
       content.className = isAuthPage ? '' : 'app-layout';
       handler(content, routeParams);
     }

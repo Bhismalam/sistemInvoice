@@ -79,6 +79,15 @@ const documentController = {
         business_logo: doc.business_logo,
         business_address: doc.business_address,
         business_phone: doc.business_phone,
+        company_name: doc.company_name,
+        company_address: doc.company_address,
+        company_phone: doc.company_phone,
+        company_email: doc.company_email,
+        company_npwp: doc.company_npwp,
+        company_bank_name: doc.company_bank_name,
+        company_bank_account_number: doc.company_bank_account_number,
+        company_bank_account_name: doc.company_bank_account_name,
+        company_logo: doc.company_logo,
         items: doc.items
       };
       res.json({ success: true, data: publicData });
@@ -281,6 +290,40 @@ const documentController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async uploadPaymentProof(req, res, next) {
+    try {
+      const doc = await Document.findByPaymentLink(req.params.paymentLink);
+      if (!doc) return res.status(404).json({ success: false, message: 'Invoice tidak ditemukan.' });
+      if (doc.status === 'paid') return res.status(400).json({ success: false, message: 'Invoice sudah lunas.' });
+      if (doc.status === 'cancelled') return res.status(400).json({ success: false, message: 'Invoice sudah dibatalkan.' });
+
+      const { sender_name, sender_bank, transfer_amount, notes } = req.body;
+      
+      // Save proof file path
+      const proofFile = req.file ? req.file.path : null;
+
+      // Send notifications to business owner
+      const NotificationService = require('../services/notificationService');
+      await NotificationService.notifyPaymentProof(doc, {
+        sender_name: sender_name || doc.contact_name,
+        sender_bank: sender_bank || '-',
+        transfer_amount: transfer_amount || doc.total,
+        notes: notes || '',
+        proof_file: proofFile
+      });
+
+      // Send confirmation WhatsApp to customer
+      if (doc.contact_phone) {
+        await NotificationService.sendCustomerConfirmation(doc);
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Bukti pembayaran berhasil dikirim! Kami akan segera memverifikasinya.' 
+      });
+    } catch (error) { next(error); }
   }
 };
 

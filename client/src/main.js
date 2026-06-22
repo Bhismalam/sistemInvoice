@@ -27,6 +27,7 @@ import { renderProducts } from './pages/Products.js';
 import { renderReports } from './pages/Reports.js';
 import { renderSettings } from './pages/Settings.js';
 import { renderCompanySettings } from './pages/CompanySettings.js';
+import { renderPublicPayment } from './pages/PublicPayment.js';
 
 // Initialize Router
 const router = new Router();
@@ -54,6 +55,8 @@ router
   .add('/purchases/invoices/:id', renderDocumentDetail)
   .add('/purchases/receipts', (c) => renderReceiptList(c, { transactionType: 'purchase' }))
   .add('/purchases/debts', (c) => renderDebtManagement(c, { transactionType: 'purchase' }))
+  // Public routes
+  .add('/pay/:id', renderPublicPayment)
   // Other routes
   .add('/contacts', renderContacts)
   .add('/products', renderProducts)

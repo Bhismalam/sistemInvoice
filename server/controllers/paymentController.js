@@ -57,15 +57,44 @@ const paymentController = {
       if (parts.length < 3) return res.status(400).send('Invalid Order ID');
       const docId = parts[1];
 
+      let paymentSucceeded = false;
+      let paymentType = null;
+
       if (transactionStatus === 'capture') {
         if (fraudStatus === 'accept') {
           await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
+          paymentSucceeded = true;
+          paymentType = statusResponse.payment_type;
         }
         // fraudStatus === 'challenge': biarkan pending, tangani manual di dashboard Midtrans
       } else if (transactionStatus === 'settlement') {
         await markAsPaid(docId, statusResponse.gross_amount, statusResponse.payment_type);
+        paymentSucceeded = true;
+        paymentType = statusResponse.payment_type;
       }
       // 'cancel', 'deny', 'expire', 'pending': tidak perlu action untuk sekarang
+
+      // Send notifications to owner after successful payment
+      if (paymentSucceeded) {
+        try {
+          const NotificationService = require('../services/notificationService');
+          const docForNotif = await require('mongoose').model('Document').findById(docId)
+            .populate('user_id', 'phone email business_name')
+            .populate('contact_id', 'name email phone');
+          if (docForNotif) {
+            const notifDoc = {
+              ...docForNotif.toObject(),
+              contact_name: docForNotif.contact_id?.name,
+              contact_phone: docForNotif.contact_id?.phone,
+              contact_email: docForNotif.contact_id?.email,
+              business_name: docForNotif.user_id?.business_name
+            };
+            await NotificationService.notifyMidtransPayment(notifDoc, paymentType || 'Midtrans');
+          }
+        } catch (notifErr) {
+          console.error('Notification after Midtrans payment failed:', notifErr.message);
+        }
+      }
 
       res.status(200).json({ success: true });
     } catch (error) {
