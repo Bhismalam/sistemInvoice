@@ -102,15 +102,11 @@ export function renderDocumentDetail(container, routeParams = {}) {
           <div style="background:var(--bg-primary);border-radius:var(--radius-md);padding:var(--space-2xl)">
             <div class="flex justify-between" style="margin-bottom:var(--space-2xl)">
               <div><h2 style="font-size:1.5rem;font-weight:700">${typeTitle.toUpperCase()}</h2><p class="text-muted">${doc.document_number}</p></div>
-<<<<<<< HEAD
               <div style="text-align:right">
                 <p style="font-weight:600">${senderName}</p>
                 ${senderAddress ? `<p class="text-muted" style="font-size:0.85rem;max-width:250px;margin-left:auto;white-space:pre-wrap;">${senderAddress}</p>` : ''}
                 ${senderNpwp ? `<p class="text-muted" style="font-size:0.85rem;margin-top:4px;">NPWP: ${senderNpwp}</p>` : ''}
               </div>
-=======
-              <div style="text-align:right"><p style="font-weight:600">${JSON.parse(sessionStorage.getItem('user') || '{}').business_name || 'InvoiceFlow'}</p></div>
->>>>>>> af6e3ad08e0407e14461c5ba21eba775a0cd3eb9
             </div>
             <div class="grid-2" style="margin-bottom:var(--space-xl)">
               <div>
@@ -291,7 +287,6 @@ export function renderDocumentDetail(container, routeParams = {}) {
         const paymentUrl = `${window.location.origin}/#/pay/${docData.payment_link}`;
         defaultMessage += `\n🔗 Lihat & Bayar: ${paymentUrl}\n`;
       }
-<<<<<<< HEAD
       
       const companySession = JSON.parse(sessionStorage.getItem('company') || '{}');
       if (companySession.bank_name && companySession.bank_account_number) {
@@ -299,8 +294,6 @@ export function renderDocumentDetail(container, routeParams = {}) {
         defaultMessage += `*${companySession.bank_name} - ${companySession.bank_account_number}*\n`;
         defaultMessage += `A/N: ${companySession.bank_account_name || businessName}\n`;
       }
-=======
->>>>>>> af6e3ad08e0407e14461c5ba21eba775a0cd3eb9
 
       defaultMessage += `\nTerima kasih! 🙏\n— ${businessName}`;
 
