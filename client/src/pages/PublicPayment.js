@@ -515,9 +515,16 @@ function renderInvoicePage(doc) {
   const isCancelled = doc.status === 'cancelled';
   const showPayment = !isPaid && !isCancelled;
 
-  const logoUrl = doc.company_logo && doc.company_logo.startsWith('/uploads')
-    ? `${PUBLIC_API_BASE.replace('/api', '')}${doc.company_logo}`
-    : doc.company_logo;
+  let logoUrl = doc.company_logo;
+  if (logoUrl) {
+    if (logoUrl.startsWith('http')) {
+      // already full URL
+    } else if (logoUrl.startsWith('/uploads')) {
+      logoUrl = `${PUBLIC_API_BASE.replace('/api', '')}${logoUrl}`;
+    } else {
+      logoUrl = `${PUBLIC_API_BASE.replace('/api', '')}/uploads/${logoUrl}`;
+    }
+  }
 
   const logoHtml = logoUrl
     ? `<img src="${logoUrl}" alt="${doc.company_name || ''}" class="pp-header-logo" />`
