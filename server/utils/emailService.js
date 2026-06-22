@@ -1,4 +1,4 @@
-﻿const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
@@ -39,8 +39,9 @@ async function sendEmailWithAttachment({ to, subject, text, html, attachmentBuff
     };
     return transporter.sendMail(mailOptions);
   } else {
-    // MOCK MODE: Write the email details and attachment to local scratch folder for developer inspection
-    const scratchDir = path.resolve(__dirname, '../../scratch');
+    // MOCK MODE: Write the email details and attachment to temporary folder
+    const os = require('os');
+    const scratchDir = path.join(os.tmpdir(), 'invoiceflow_scratch');
     
     // Ensure scratch directory exists
     if (!fs.existsSync(scratchDir)) {
