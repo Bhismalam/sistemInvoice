@@ -438,7 +438,6 @@ export function renderDocumentDetail(container, routeParams = {}) {
       if (!portal) return;
 
       const businessName = JSON.parse(sessionStorage.getItem('user') || '{}').business_name || 'InvoiceFlow';
-<<<<<<< HEAD
       const companySession = JSON.parse(sessionStorage.getItem('company') || '{}');
       
       let paymentInfoText = '';
@@ -446,12 +445,19 @@ export function renderDocumentDetail(container, routeParams = {}) {
         paymentInfoText = `\n\nAtau Anda dapat mentransfer langsung ke rekening berikut:\nBank: ${companySession.bank_name}\nNo Rek: ${companySession.bank_account_number}\nA/N: ${companySession.bank_account_name || businessName}`;
       }
 
-      const defaultSubject = `[Invoice] No. ${docData.document_number} - ${businessName}`;
-      const defaultMessage = `Halo ${docData.contact_name || 'Pelanggan'},\n\nBerikut kami lampirkan invoice tagihan dengan nomor ${docData.document_number} sebesar ${formatCurrency(docData.total)} yang jatuh tempo pada tanggal ${formatDate(docData.due_date)}.\n\nAnda dapat melakukan pembayaran langsung melalui tautan berikut:\n${window.location.origin}/#/pay/${docData.payment_link || ''}${paymentInfoText}\n\nTerima kasih atas kerja samanya.\n\nSalam,\n${businessName}`;
-=======
-      const defaultSubject = `[Invoice] No. ${docData.document_number} - ${businessName}`;
-      const defaultMessage = `Halo ${docData.contact_name || 'Pelanggan'},\n\nBerikut kami lampirkan invoice tagihan dengan nomor ${docData.document_number} sebesar ${formatCurrency(docData.total)} yang jatuh tempo pada tanggal ${formatDate(docData.due_date)}.\n\nAnda dapat melakukan pembayaran langsung melalui tautan berikut:\n${window.location.origin}/#/pay/${docData.payment_link || ''}\n\nTerima kasih atas kerja samanya.\n\nSalam,\n${businessName}`;
->>>>>>> af6e3ad08e0407e14461c5ba21eba775a0cd3eb9
+      const defaultSubject = `[${typeLabel}] No. ${docData.document_number} - ${businessName}`;
+      
+      let defaultMessage = `Halo ${docData.contact_name || 'Pelanggan'},\n\nBerikut kami lampirkan ${typeLabel.toLowerCase()} dengan nomor ${docData.document_number} sebesar ${formatCurrency(docData.total)} yang jatuh tempo pada tanggal ${formatDate(docData.due_date)}.`;
+      
+      if (docData.payment_link) {
+        defaultMessage += `\n\nAnda dapat melakukan pembayaran langsung melalui tautan berikut:\n${window.location.origin}/#/pay/${docData.payment_link}`;
+      }
+      
+      if (paymentInfoText) {
+        defaultMessage += paymentInfoText;
+      }
+      
+      defaultMessage += `\n\nTerima kasih atas kerja samanya.\n\nSalam,\n${businessName}`;
 
       portal.innerHTML = `
         <div class="modal-overlay" id="email-modal-bg">
