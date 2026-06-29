@@ -10,7 +10,7 @@ export function renderContacts(container) {
     <div class="page-header"><div><h1 class="page-title">Mitra</h1><p class="page-subtitle">Kelola pelanggan & supplier</p></div>
       <button class="btn btn-primary" id="add-contact-btn">+ Tambah Mitra</button></div>
     <div class="glass-card" style="padding:var(--space-xl)">
-      <div class="flex items-center gap-lg" style="margin-bottom:var(--space-xl)">
+      <div class="flex items-center gap-lg" style="margin-bottom:var(--space-xl);flex-wrap:wrap">
         <div class="tabs" id="type-tabs"><button class="tab-btn active" data-type="">Semua</button><button class="tab-btn" data-type="customer">Pelanggan</button><button class="tab-btn" data-type="supplier">Supplier</button></div>
         <input type="text" class="form-input" placeholder="Cari mitra..." id="search-contact" style="max-width:240px" />
       </div>
@@ -29,7 +29,7 @@ export function renderContacts(container) {
       const res = await api(`/contacts?type=${currentType}&search=${searchTerm}&limit=50`);
       const list = document.getElementById('contact-list');
       list.innerHTML = res.data.length ? res.data.map(c => `
-        <div class="flex items-center gap-lg" style="padding:var(--space-base);border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onmouseover="this.style.background='var(--bg-glass-light)'" onmouseout="this.style.background='transparent'">
+        <div class="flex items-center gap-lg" style="padding:var(--space-base);border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;flex-wrap:wrap" onmouseover="this.style.background='var(--bg-glass-light)'" onmouseout="this.style.background='transparent'">
           <div class="header__avatar" style="width:42px;height:42px;font-size:0.85rem;flex-shrink:0">${getInitials(c.name)}</div>
           <div style="flex:1;min-width:0">
             <div class="flex items-center gap-sm"><strong class="truncate">${c.name}</strong><span class="badge ${c.type==='customer'?'badge-sent':'badge-draft'}" style="font-size:0.65rem">${c.type==='customer'?'Pelanggan':'Supplier'}</span></div>

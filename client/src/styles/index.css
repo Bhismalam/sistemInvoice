@@ -713,3 +713,38 @@ body.light-mode .toast-close:hover {
   animation: scaleDownConfirm 0.15s ease forwards;
 }
 
+/* === TABLE RESPONSIVE WRAPPER === */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(var(--space-base) * -1);
+  padding: 0 var(--space-base);
+}
+.table-responsive .data-table {
+  min-width: 600px;
+}
+
+/* === RESPONSIVE: 768px === */
+@media (max-width: 768px) {
+  /* Toast: full width on mobile */
+  #toast-container { left: var(--space-base); right: var(--space-base); bottom: var(--space-base); }
+  .toast { min-width: unset; max-width: unset; width: 100%; }
+
+  /* Modal: smaller padding */
+  .modal-content { padding: var(--space-xl); width: 95%; }
+
+  /* Debt summary grid */
+  .debt-summary-grid { grid-template-columns: 1fr; }
+
+  /* Buttons: compact */
+  .btn { padding: 8px 14px; font-size: 0.8rem; }
+}
+
+/* === RESPONSIVE: 480px === */
+@media (max-width: 480px) {
+  .modal-content { padding: var(--space-base); }
+  .confirm-dialog { width: 95%; }
+  .debt-card { padding: var(--space-base); }
+  .debt-card__amount { font-size: 1.2rem; }
+}
+

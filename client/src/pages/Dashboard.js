@@ -30,7 +30,7 @@ export function renderDashboard(container) {
           <div id="status-breakdown"><div class="page-loading"><div class="spinner"></div></div></div>
         </div>
       </div>
-      <div style="margin-top:var(--space-xl);display:flex;gap:var(--space-md);">
+      <div style="margin-top:var(--space-xl);display:flex;gap:var(--space-md);flex-wrap:wrap;">
         <a href="#/sales/invoices/new" class="btn btn-secondary"><iconify-icon icon="lucide:file-text" width="16" height="16"></iconify-icon> Buat Invoice</a>
         <a href="#/contacts" class="btn btn-secondary"><iconify-icon icon="lucide:users" width="16" height="16"></iconify-icon> Tambah Mitra</a>
         <a href="#/products" class="btn btn-secondary"><iconify-icon icon="lucide:box" width="16" height="16"></iconify-icon> Tambah Produk</a>
@@ -102,6 +102,7 @@ async function loadDashboardData() {
     // Recent invoices
     const invoices = recentRes.data;
     document.getElementById('recent-invoices').innerHTML = invoices.length ? `
+      <div class="table-responsive">
       <table class="data-table">
         <thead><tr><th>Invoice</th><th>Klien</th><th>Total</th><th>Status</th></tr></thead>
         <tbody>
@@ -115,6 +116,7 @@ async function loadDashboardData() {
           `).join('')}
         </tbody>
       </table>
+      </div>
       <div style="margin-top:var(--space-base);text-align:right"><a href="#/sales/invoices" class="auth-link">Lihat Semua →</a></div>
     ` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:file-text" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada invoice</p><a href="#/sales/invoices/new" class="btn btn-primary btn-sm">Buat Invoice Pertama</a></div>';
 

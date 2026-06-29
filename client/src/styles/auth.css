@@ -304,6 +304,23 @@
     .auth-form-container {
         padding: var(--space-xl);
     }
+
+    /* Settings navigation: scrollable */
+    .settings-nav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .settings-nav-item { white-space: nowrap; flex-shrink: 0; }
+
+    /* Roles table: scrollable */
+    .roles-matrix { overflow-x: auto; }
+    .roles-table { min-width: 500px; }
+
+    /* Permission grid: stack */
+    .perm-resource-row { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+}
+
+@media (max-width: 480px) {
+    .auth-form-container { padding: var(--space-base); }
+    .auth-form__title { font-size: 1.4rem; }
+    .settings-nav-item { padding: 10px 14px; font-size: 0.8rem; }
 }
 
 /* Auth Tabs (Register page) */

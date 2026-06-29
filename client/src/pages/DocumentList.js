@@ -70,6 +70,7 @@ export function renderDocumentList(container, routeParams = {}) {
       const meta = res.meta || { total: docs.length, totalPages: 1 };
 
       document.getElementById('document-table').innerHTML = docs.length ? `
+        <div class="table-responsive">
         <table class="data-table">
           <thead><tr><th>No. Dokumen</th><th>Kontak</th><th>Tanggal</th><th>Jatuh Tempo</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>
@@ -105,6 +106,7 @@ export function renderDocumentList(container, routeParams = {}) {
             `}).join('')}
           </tbody>
         </table>
+        </div>
         <div class="flex justify-between items-center" style="margin-top:var(--space-base);padding-top:var(--space-base);border-top:1px solid rgba(255,255,255,0.05)">
           <span class="text-muted" style="font-size:0.8rem">Menampilkan ${docs.length} dari ${meta.total} dokumen</span>
           <div class="pagination">

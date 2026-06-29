@@ -117,10 +117,12 @@ export function renderDocumentDetail(container, routeParams = {}) {
               </div>
               <div style="text-align:right"><p class="form-label">Tanggal</p><p>${formatDate(doc.issue_date)}</p><p class="form-label" style="margin-top:var(--space-sm)">Jatuh Tempo</p><p>${formatDate(doc.due_date)}</p></div>
             </div>
+            <div class="table-responsive">
             <table class="data-table">
               <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Total</th></tr></thead>
               <tbody>${(doc.items || []).map(item => `<tr><td>${item.description}</td><td style="text-align:right">${item.quantity}</td><td style="text-align:right">${formatCurrency(item.unit_price)}</td><td style="text-align:right;font-weight:600">${formatCurrency(item.total)}</td></tr>`).join('')}</tbody>
             </table>
+            </div>
             
             <div class="grid-2" style="margin-top:var(--space-xl);border-top:1px solid rgba(255,255,255,0.08);padding-top:var(--space-base);gap:var(--space-xl)">
               <div>

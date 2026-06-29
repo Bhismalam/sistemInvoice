@@ -109,7 +109,9 @@ export function renderLayout(container, activePage) {
       </div>
     </aside>
 
-    <div style="flex:1;display:flex;flex-direction:column;margin-left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'};transition:margin-left var(--transition-base);" id="main-wrapper">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="${collapsed ? 'sidebar-collapsed' : ''}" style="flex:1;display:flex;flex-direction:column;margin-left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'};transition:margin-left var(--transition-base);" id="main-wrapper">
       <header class="header" style="left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'}">
         <button class="header__toggle" id="sidebar-toggle"><iconify-icon icon="lucide:menu" width="20" height="20"></iconify-icon></button>
         <div class="header__search" style="position:relative;">
@@ -201,16 +203,55 @@ export function renderLayout(container, activePage) {
     });
   }
 
-  // Sidebar toggle
+  // Sidebar toggle — mobile overlay vs desktop collapse
+  const mobileQuery = window.matchMedia('(max-width: 768px)');
+
+  const closeMobileSidebar = () => {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('sidebar-open');
+    if (overlay) overlay.classList.remove('active');
+  };
+
   document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
     const sidebar = document.getElementById('sidebar');
     const header = container.querySelector('.header');
     const wrapper = document.getElementById('main-wrapper');
-    sidebar.classList.toggle('collapsed');
-    const isCollapsed = sidebar.classList.contains('collapsed');
-    localStorage.setItem('sidebarCollapsed', isCollapsed);
-    header.style.left = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
-    wrapper.style.marginLeft = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (mobileQuery.matches) {
+      // Mobile: toggle overlay sidebar
+      const isOpen = sidebar.classList.toggle('sidebar-open');
+      if (isOpen) {
+        overlay?.classList.add('active');
+      } else {
+        overlay?.classList.remove('active');
+      }
+    } else {
+      // Desktop: toggle collapse
+      sidebar.classList.toggle('collapsed');
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      localStorage.setItem('sidebarCollapsed', isCollapsed);
+      header.style.left = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
+      wrapper.style.marginLeft = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
+      if (isCollapsed) {
+        wrapper.classList.add('sidebar-collapsed');
+      } else {
+        wrapper.classList.remove('sidebar-collapsed');
+      }
+    }
+  });
+
+  // Close sidebar on overlay click (mobile)
+  document.getElementById('sidebar-overlay')?.addEventListener('click', closeMobileSidebar);
+
+  // Close sidebar on nav link click (mobile)
+  container.querySelectorAll('.sidebar .nav-item').forEach(link => {
+    link.addEventListener('click', () => {
+      if (mobileQuery.matches) {
+        closeMobileSidebar();
+      }
+    });
   });
 
   // Logout

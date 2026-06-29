@@ -21,12 +21,12 @@ export function renderProducts(container) {
   async function load() {
     try {
       const res = await api(`/products?search=${search}&limit=50`);
-      document.getElementById('product-list').innerHTML = res.data.length ? `<table class="data-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Satuan</th><th style="text-align:right">Harga</th><th style="text-align:right">Stok</th><th></th></tr></thead><tbody>
+      document.getElementById('product-list').innerHTML = res.data.length ? `<div class="table-responsive"><table class="data-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Satuan</th><th style="text-align:right">Harga</th><th style="text-align:right">Stok</th><th></th></tr></thead><tbody>
         ${res.data.map(p => `<tr><td><strong>${p.name}</strong>${p.description ? `<br><span class="text-muted" style="font-size:0.8rem">${p.description}</span>` : ''}</td>
         <td><span class="badge badge-draft">${p.category || '-'}</span></td><td>${p.unit}</td><td style="text-align:right;font-weight:600">${formatCurrency(p.price)}</td>
         <td style="text-align:right"><span style="color:${p.stock < 10 ? 'var(--danger)' : 'var(--text-primary)'}">${p.stock}</span></td>
         <td><button class="btn btn-ghost btn-sm del-p" data-id="${p.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td></tr>`).join('')}
-      </tbody></table>` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:box" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada produk</p></div>';
+      </tbody></table></div>` : '<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:box" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada produk</p></div>';
       document.querySelectorAll('.del-p').forEach(b => b.addEventListener('click', async () => { if(await showConfirm('Hapus produk?')){ await api(`/products/${b.dataset.id}`,{method:'DELETE'}); showToast('Produk dihapus','success'); load(); }}));
     } catch(err) { document.getElementById('product-list').innerHTML = `<p class="text-danger">${err.message}</p>`; }
   }
