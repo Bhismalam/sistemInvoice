@@ -111,8 +111,8 @@ export function renderLayout(container, activePage) {
 
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <div class="${collapsed ? 'sidebar-collapsed' : ''}" style="flex:1;display:flex;flex-direction:column;margin-left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'};transition:margin-left var(--transition-base);" id="main-wrapper">
-      <header class="header" style="left:${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'}">
+    <div class="${collapsed ? 'sidebar-collapsed' : ''} main-wrapper" style="flex:1;display:flex;flex-direction:column;" id="main-wrapper">
+      <header class="header">
         <button class="header__toggle" id="sidebar-toggle"><iconify-icon icon="lucide:menu" width="20" height="20"></iconify-icon></button>
         <div class="header__search" style="position:relative;">
           <span class="header__search-icon"><iconify-icon icon="lucide:search" width="16" height="16"></iconify-icon></span>
@@ -232,8 +232,6 @@ export function renderLayout(container, activePage) {
       sidebar.classList.toggle('collapsed');
       const isCollapsed = sidebar.classList.contains('collapsed');
       localStorage.setItem('sidebarCollapsed', isCollapsed);
-      header.style.left = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
-      wrapper.style.marginLeft = isCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
       if (isCollapsed) {
         wrapper.classList.add('sidebar-collapsed');
       } else {
