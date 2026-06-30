@@ -111,7 +111,7 @@ export function renderLayout(container, activePage) {
 
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <div class="${collapsed ? 'sidebar-collapsed' : ''} main-wrapper" style="flex:1;display:flex;flex-direction:column;" id="main-wrapper">
+    <div class="${collapsed ? 'sidebar-collapsed' : ''} main-wrapper" style="flex:1;display:flex;flex-direction:column;min-width:0;" id="main-wrapper">
       <header class="header">
         <button class="header__toggle" id="sidebar-toggle"><iconify-icon icon="lucide:menu" width="20" height="20"></iconify-icon></button>
         <div class="header__search" style="position:relative;">
@@ -148,7 +148,7 @@ export function renderLayout(container, activePage) {
           </button>
         </div>
       </header>
-      <main class="main-content" id="page-content" style="margin-left:0;margin-top:var(--header-height);">
+      <main class="main-content" id="page-content" style="margin-top:var(--header-height);min-width:0;">
       </main>
     </div>
   `;

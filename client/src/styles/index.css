@@ -719,6 +719,7 @@ body.light-mode .toast-close:hover {
   -webkit-overflow-scrolling: touch;
   margin: 0 calc(var(--space-base) * -1);
   padding: 0 var(--space-base);
+  width: 100%;
 }
 .table-responsive .data-table {
   min-width: 600px;
