@@ -111,6 +111,11 @@ iconify-icon { display: inline-flex; vertical-align: middle; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-xl); }
 .grid-sidebar { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-xl); }
 
+/* Prevent grid blowout */
+.grid-4 > *, .grid-3 > *, .grid-2 > *, .grid-sidebar > * {
+  min-width: 0;
+}
+
 /* === SIDEBAR OVERLAY (Mobile) === */
 .sidebar-overlay {
   display: none;
