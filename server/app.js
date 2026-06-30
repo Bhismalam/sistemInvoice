@@ -28,7 +28,10 @@ const whatsappRoutes = require('./routes/whatsapp');
 const app = express();
 
 // === SECURITY MIDDLEWARE ===
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(helmet({ 
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false
+}));
 
 const corsOptions = {
   origin: function (origin, callback) {

@@ -125,28 +125,35 @@ export function renderLogin(container) {
   // Google Login Initialization
   setTimeout(() => {
     if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE',
-        callback: async (response) => {
-          try {
-            const res = await api('/auth/google', {
-              method: 'POST',
-              body: { token: response.credential }
-            });
-            setTokens(res.data.accessToken, res.data.refreshToken);
-            sessionStorage.setItem('user', JSON.stringify(res.data.user));
-            if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
-            showToast('Login Google berhasil!', 'success');
-            window.location.hash = '#/dashboard';
-          } catch (err) {
-            showToast(err.message || 'Login Google gagal', 'error');
+      if (!window.__googleInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE',
+          callback: async (response) => {
+            try {
+              const res = await api('/auth/google', {
+                method: 'POST',
+                body: { token: response.credential }
+              });
+              setTokens(res.data.accessToken, res.data.refreshToken);
+              sessionStorage.setItem('user', JSON.stringify(res.data.user));
+              if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
+              showToast('Login Google berhasil!', 'success');
+              window.location.hash = '#/dashboard';
+            } catch (err) {
+              showToast(err.message || 'Login Google gagal', 'error');
+            }
           }
-        }
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-login-btn-container'),
-        { theme: 'outline', size: 'large', width: '100%' }
-      );
+        });
+        window.__googleInitialized = true;
+      }
+      
+      const btnContainer = document.getElementById('google-login-btn-container');
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(
+          btnContainer,
+          { theme: 'outline', size: 'large', width: '380' } // width must be exact pixels, not %
+        );
+      }
     }
   }, 500);
 }
