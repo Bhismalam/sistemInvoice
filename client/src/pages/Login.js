@@ -40,7 +40,7 @@ export function renderLogin(container) {
               </div>
             </div>
             <div class="auth-form__actions">
-              <label class="auth-checkbox"><input type="checkbox" checked /> Ingat saya</label>
+              <label class="auth-checkbox"><input type="checkbox" id="remember-me" ${localStorage.getItem('invoiceflow_remember') ? 'checked' : ''} /> Ingat saya</label>
               <a href="#/forgot-password" class="auth-link">Lupa Password?</a>
             </div>
             <button type="submit" class="btn btn-primary auth-form__btn" id="login-btn">
@@ -54,6 +54,20 @@ export function renderLogin(container) {
       </div>
     </div>
   `;
+
+  // Prefill saved credentials (Remember Me)
+  const savedCreds = localStorage.getItem('invoiceflow_remember');
+  if (savedCreds) {
+    try {
+      const { email, password } = JSON.parse(atob(savedCreds));
+      const emailInput = document.getElementById('login-email');
+      const passInput = document.getElementById('login-password');
+      if (emailInput && email) emailInput.value = email;
+      if (passInput && password) passInput.value = password;
+    } catch (e) {
+      localStorage.removeItem('invoiceflow_remember');
+    }
+  }
 
   // Toggle password
   document.getElementById('toggle-password')?.addEventListener('click', () => {
@@ -86,6 +100,16 @@ export function renderLogin(container) {
       setTokens(res.data.accessToken, res.data.refreshToken);
       sessionStorage.setItem('user', JSON.stringify(res.data.user));
       if (res.data.company) sessionStorage.setItem('company', JSON.stringify(res.data.company));
+
+      // Remember Me: simpan atau hapus kredensial
+      const rememberMe = document.getElementById('remember-me')?.checked;
+      if (rememberMe) {
+        const encoded = btoa(JSON.stringify({ email, password }));
+        localStorage.setItem('invoiceflow_remember', encoded);
+      } else {
+        localStorage.removeItem('invoiceflow_remember');
+      }
+
       showToast('Login berhasil! Selamat datang', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
