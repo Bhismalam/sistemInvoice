@@ -53,8 +53,26 @@ export function renderDocumentCreate(container, routeParams = {}) {
             <span class="text-muted">PPN (%)</span>
             <input type="number" class="form-input" id="doc-tax" value="11" min="0" style="width:80px;padding:6px 10px;text-align:right" />
           </div>
+          <div class="flex justify-between items-center" style="margin-bottom:var(--space-sm)">
+            <span class="text-muted">PPh (%)</span>
+            <input type="number" class="form-input" id="doc-withholding-tax" value="0" min="0" style="width:80px;padding:6px 10px;text-align:right" />
+          </div>
           <div class="flex justify-between" style="font-size:1.2rem;font-weight:700;margin-top:var(--space-md);padding-top:var(--space-md);border-top:2px solid var(--accent-primary)">
             <span>Total</span><span id="grand-total" style="color:var(--accent-primary)">${formatCurrency(0)}</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:var(--space-md); padding: var(--space-md); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+          <label class="form-label flex items-center gap-sm" style="cursor:pointer">
+            <input type="checkbox" id="doc-is-recurring" style="width:16px;height:16px;" /> Tagihan Berlangganan (Recurring)
+          </label>
+          <div id="recurring-settings" style="display: none; margin-top: var(--space-sm);">
+            <label class="text-muted" style="display:block;margin-bottom:4px">Interval Tagihan:</label>
+            <select class="form-select" id="doc-recurrence-interval">
+              <option value="monthly">Bulanan</option>
+              <option value="yearly">Tahunan</option>
+              <option value="weekly">Mingguan</option>
+            </select>
           </div>
         </div>
 
@@ -158,17 +176,26 @@ export function renderDocumentCreate(container, routeParams = {}) {
     });
     const discountPct = parseFloat(document.getElementById('doc-discount').value) || 0;
     const taxPct = parseFloat(document.getElementById('doc-tax').value) || 0;
+    const withholdingTaxPct = parseFloat(document.getElementById('doc-withholding-tax')?.value) || 0;
+    
     const discountAmt = subtotal * (discountPct / 100);
     const afterDiscount = subtotal - discountAmt;
     const taxAmt = afterDiscount * (taxPct / 100);
-    const grandTotal = afterDiscount + taxAmt;
+    const withholdingTaxAmt = afterDiscount * (withholdingTaxPct / 100);
+    
+    const grandTotal = afterDiscount + taxAmt - withholdingTaxAmt;
     document.getElementById('subtotal').textContent = formatCurrency(subtotal);
     document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
   }
 
+  document.getElementById('doc-is-recurring')?.addEventListener('change', (e) => {
+    document.getElementById('recurring-settings').style.display = e.target.checked ? 'block' : 'none';
+  });
+
   document.getElementById('add-item').addEventListener('click', addItemRow);
   document.getElementById('doc-discount')?.addEventListener('input', recalculate);
   document.getElementById('doc-tax')?.addEventListener('input', recalculate);
+  document.getElementById('doc-withholding-tax')?.addEventListener('input', recalculate);
 
   let isSubmitting = false;
 
@@ -193,6 +220,12 @@ export function renderDocumentCreate(container, routeParams = {}) {
     const taxPct = parseFloat(document.getElementById('doc-tax').value) || 0;
     const discountAmt = subtotal * (discountPct / 100);
     const taxAmt = (subtotal - discountAmt) * (taxPct / 100);
+
+    const withholdingTaxPct = parseFloat(document.getElementById('doc-withholding-tax')?.value) || 0;
+    const withholdingTaxAmt = (subtotal - discountAmt) * (withholdingTaxPct / 100);
+
+    const isRecurring = document.getElementById('doc-is-recurring')?.checked || false;
+    const recurrenceInterval = isRecurring ? document.getElementById('doc-recurrence-interval').value : null;
 
     const saveDraftBtn = document.getElementById('save-draft');
     const sendDocBtn = document.getElementById('send-document');
@@ -220,7 +253,10 @@ export function renderDocumentCreate(container, routeParams = {}) {
         due_date: document.getElementById('doc-due-date').value,
         subtotal, discount_percent: discountPct, discount_amount: discountAmt,
         tax_percent: taxPct, tax_amount: taxAmt,
-        total: subtotal - discountAmt + taxAmt,
+        withholding_tax_percent: withholdingTaxPct, withholding_tax_amount: withholdingTaxAmt,
+        is_recurring: isRecurring, recurrence_interval: recurrenceInterval,
+        next_recurrence_date: isRecurring ? document.getElementById('doc-issue-date').value : null,
+        total: subtotal - discountAmt + taxAmt - withholdingTaxAmt,
         notes: document.getElementById('doc-notes').value,
         items
       }});

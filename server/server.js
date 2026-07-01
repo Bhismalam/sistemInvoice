@@ -1,9 +1,11 @@
 const app = require('./app');
+const { initCronJobs } = require('./utils/cronService');
 const { initDB } = require('./config/database');
 
 const PORT = process.env.PORT || 3000;
 
 initDB().then(() => {
+  initCronJobs();
   app.listen(PORT, () => {
     console.log(`
     ╔══════════════════════════════════════════╗

@@ -25,6 +25,11 @@ const documentSchema = new mongoose.Schema({
   discount_amount: { type: Number, default: 0 },
   tax_percent: { type: Number, default: 11 },
   tax_amount: { type: Number, default: 0 },
+  withholding_tax_percent: { type: Number, default: 0 },
+  withholding_tax_amount: { type: Number, default: 0 },
+  is_recurring: { type: Boolean, default: false },
+  recurrence_interval: { type: String, enum: ['monthly', 'yearly', 'weekly'], default: null },
+  next_recurrence_date: { type: Date, default: null },
   total: { type: Number, default: 0 },
   notes: { type: String, default: null },
   payment_link: { type: String, default: null },
@@ -88,13 +93,34 @@ async function syncStock(oldDoc, newDoc) {
   await Product.updateMany({ stock: { $lt: 0 } }, { stock: 0 });
 }
 
+function calculateTotals(data) {
+  let subtotal = 0;
+  if (data.items && Array.isArray(data.items)) {
+    data.items.forEach(item => {
+      item.total = item.quantity * item.unit_price;
+      subtotal += item.total;
+    });
+    data.subtotal = subtotal;
+  } else {
+    subtotal = data.subtotal || 0;
+  }
+  
+  const discount = data.discount_amount || (subtotal * (data.discount_percent || 0) / 100);
+  data.discount_amount = discount;
+  const taxable = subtotal - discount;
+  
+  const tax = data.tax_amount || (taxable * (data.tax_percent || 0) / 100);
+  data.tax_amount = tax;
+  
+  const withholding = data.withholding_tax_amount || (taxable * (data.withholding_tax_percent || 0) / 100);
+  data.withholding_tax_amount = withholding;
+  
+  data.total = taxable + tax - withholding;
+}
+
 const Document = {
   async create(data) {
-    if (data.items) {
-      data.items.forEach(item => {
-        item.total = item.quantity * item.unit_price;
-      });
-    }
+    calculateTotals(data);
     const doc = new DocumentModelDB(data);
     await doc.save();
 
@@ -218,11 +244,7 @@ const Document = {
   },
 
   async update(id, userId, data, companyId = null) {
-    if (data.items) {
-      data.items.forEach(item => {
-        item.total = item.quantity * item.unit_price;
-      });
-    }
+    calculateTotals(data);
     if (data.status === 'paid') data.paid_at = new Date();
     
     let query = companyId ? { _id: id, company_id: companyId } : { _id: id, user_id: userId };
