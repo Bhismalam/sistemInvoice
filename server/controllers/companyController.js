@@ -202,8 +202,8 @@ const companyController = {
       const fs = require('fs');
       const path = require('path');
 
-      // Delete old logo file if it exists
-      if (company.logo) {
+      // Delete old logo file if it exists and is a file path
+      if (company.logo && !company.logo.startsWith('data:')) {
         const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
         const oldLogoPath = path.join(uploadDir, path.basename(company.logo));
         if (fs.existsSync(oldLogoPath)) {
@@ -215,15 +215,25 @@ const companyController = {
         }
       }
 
-      const logoUrl = `/uploads/${req.file.filename}`;
-      company.logo = logoUrl;
+      // Convert uploaded file to base64
+      const fileData = fs.readFileSync(req.file.path);
+      const base64Image = `data:${req.file.mimetype};base64,${fileData.toString('base64')}`;
+
+      company.logo = base64Image;
       await company.save();
+
+      // Delete the temporary uploaded file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        console.error('Failed to delete temp file:', err);
+      }
 
       res.json({
         success: true,
         message: 'Logo perusahaan berhasil diperbarui!',
         data: {
-          logo: logoUrl
+          logo: base64Image
         }
       });
     } catch (error) { next(error); }
@@ -240,8 +250,8 @@ const companyController = {
       const fs = require('fs');
       const path = require('path');
 
-      // Delete file from disk
-      if (company.logo) {
+      // Delete file from disk if it's a file path
+      if (company.logo && !company.logo.startsWith('data:')) {
         const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
         const logoPath = path.join(uploadDir, path.basename(company.logo));
         if (fs.existsSync(logoPath)) {

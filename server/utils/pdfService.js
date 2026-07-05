@@ -1,4 +1,4 @@
-﻿const PDFDocument = require('pdfkit');
+const PDFDocument = require('pdfkit');
 const { Company } = require('../models/Company');
 const { User } = require('../models/User');
 const path = require('path');
@@ -63,21 +63,30 @@ async function generateInvoicePDF(docData) {
 
       // 1. Header (Logo & Company Info)
       let logoPath = null;
+      let logoBuffer = null;
       if (businessLogo) {
-        // Look up file in uploads folder
-        const filename = path.basename(businessLogo);
-        const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
-        const potentialPath = path.join(uploadDir, filename);
-        if (fs.existsSync(potentialPath)) {
-          logoPath = potentialPath;
+        if (businessLogo.startsWith('data:')) {
+          const matches = businessLogo.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            logoBuffer = Buffer.from(matches[2], 'base64');
+          }
+        } else {
+          // Look up file in uploads folder
+          const filename = path.basename(businessLogo);
+          const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.resolve(__dirname, '../../uploads');
+          const potentialPath = path.join(uploadDir, filename);
+          if (fs.existsSync(potentialPath)) {
+            logoPath = potentialPath;
+          }
         }
       }
 
       let logoHeight = 0;
       let logoWidth = 100;
-      if (logoPath) {
+      if (logoPath || logoBuffer) {
         try {
-          const img = pdf.openImage(logoPath);
+          const imgSource = logoBuffer || logoPath;
+          const img = pdf.openImage(imgSource);
           const scaleW = 100 / img.width;
           const scaleH = 70 / img.height;
           const scale = Math.min(scaleW, scaleH);
@@ -90,8 +99,9 @@ async function generateInvoicePDF(docData) {
         }
       }
 
-      if (logoPath) {
-        pdf.image(logoPath, 50, 45, { width: logoWidth, height: logoHeight });
+      if (logoPath || logoBuffer) {
+        const imgSource = logoBuffer || logoPath;
+        pdf.image(imgSource, 50, 45, { width: logoWidth, height: logoHeight });
       } else {
         pdf.fontSize(18).fillColor('#1e293b').font('Helvetica-Bold').text(businessName || 'INVOICEFLOW', 50, 45);
       }
@@ -116,7 +126,7 @@ async function generateInvoicePDF(docData) {
       }
 
       // Dynamically calculate divider line position based on logo/text height
-      const headerBottomY = logoPath ? Math.max(110, 45 + logoHeight + 10) : 110;
+      const headerBottomY = (logoPath || logoBuffer) ? Math.max(110, 45 + logoHeight + 10) : 110;
       pdf.strokeColor('#e2e8f0').lineWidth(1).moveTo(50, headerBottomY).lineTo(545, headerBottomY).stroke();
 
       // 2. Invoice Details (Title & Metas)
