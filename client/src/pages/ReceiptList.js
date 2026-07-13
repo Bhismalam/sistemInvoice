@@ -28,32 +28,35 @@ export function renderReceiptList(container, routeParams = {}) {
       // The better approach is if backend can filter by transaction_type, but let's filter here just in case.
       const receipts = res.data.filter(r => r.transaction_type === transactionType);
 
-      document.getElementById('receipt-list').innerHTML = receipts.length ? `<table class="data-table">
-        <thead>
-          <tr>
-            <th>No. Kuitansi</th>
-            <th>Dokumen Ref.</th>
-            <th>Kontak</th>
-            <th>Tanggal</th>
-            <th>Metode</th>
-            <th style="text-align:right">Jumlah</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        ${receipts.map(r => `
-          <tr>
-            <td style="font-weight:600">${r.receipt_number}</td>
-            <td><a href="#/${transactionType === 'sales' ? 'sales' : 'purchases'}/${r.document_type}s/${r.document_id}" style="color:var(--accent-primary)">${r.document_number}</a></td>
-            <td>${r.contact_name || '-'}</td>
-            <td>${formatDate(r.payment_date)}</td>
-            <td><span class="badge badge-draft">${r.payment_method}</span></td>
-            <td style="text-align:right;font-weight:600;color:${transactionType === 'sales' ? 'var(--success)' : 'var(--danger)'}">${formatCurrency(r.amount)}</td>
-            <td><button class="btn btn-ghost btn-sm del-r" data-id="${r.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td>
-          </tr>
-        `).join('')}
-        </tbody>
-      </table>` : `<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:receipt" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada kuitansi</p></div>`;
+      document.getElementById('receipt-list').innerHTML = receipts.length ? `
+        <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>No. Kuitansi</th>
+              <th>Dokumen Ref.</th>
+              <th>Kontak</th>
+              <th>Tanggal</th>
+              <th>Metode</th>
+              <th style="text-align:right">Jumlah</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          ${receipts.map(r => `
+            <tr>
+              <td style="font-weight:600">${r.receipt_number}</td>
+              <td><a href="#/${transactionType === 'sales' ? 'sales' : 'purchases'}/${r.document_type}s/${r.document_id}" style="color:var(--accent-primary)">${r.document_number}</a></td>
+              <td>${r.contact_name || '-'}</td>
+              <td>${formatDate(r.payment_date)}</td>
+              <td><span class="badge badge-draft">${r.payment_method}</span></td>
+              <td style="text-align:right;font-weight:600;color:${transactionType === 'sales' ? 'var(--success)' : 'var(--danger)'}">${formatCurrency(r.amount)}</td>
+              <td><button class="btn btn-ghost btn-sm del-r" data-id="${r.id}" style="color:var(--danger)"><iconify-icon icon="lucide:trash-2" width="16" height="16"></iconify-icon></button></td>
+            </tr>
+          `).join('')}
+          </tbody>
+        </table>
+        </div>` : `<div class="empty-state"><div class="empty-state__icon"><iconify-icon icon="lucide:receipt" width="48" height="48"></iconify-icon></div><p class="empty-state__title">Belum ada kuitansi</p></div>`;
       
       document.querySelectorAll('.del-r').forEach(b => b.addEventListener('click', async () => { 
         if(await showConfirm('Hapus kuitansi ini?')) { 

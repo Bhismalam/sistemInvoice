@@ -37,10 +37,12 @@ export function renderDocumentCreate(container, routeParams = {}) {
         </div>
 
         <h3 style="margin:var(--space-xl) 0 var(--space-base);font-weight:600"><iconify-icon icon="lucide:package" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Item</h3>
+        <div class="table-responsive">
         <table class="data-table" id="items-table">
           <thead><tr><th>Produk/Deskripsi</th><th style="width:100px">Qty</th><th style="width:160px">Harga</th><th style="width:160px">Total</th><th style="width:40px"></th></tr></thead>
           <tbody id="items-body"></tbody>
         </table>
+        </div>
         <button type="button" class="btn btn-secondary btn-sm" id="add-item" style="margin-top:var(--space-md)">+ Tambah Item</button>
 
         <div style="max-width:400px;margin-left:auto;margin-top:var(--space-xl);border-top:1px solid rgba(255,255,255,0.06);padding-top:var(--space-base)">

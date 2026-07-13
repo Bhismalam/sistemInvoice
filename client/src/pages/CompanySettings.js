@@ -396,7 +396,7 @@ async function renderMembersTab(content, page) {
         <h3><iconify-icon icon="lucide:users" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Anggota Tim (${members.length})</h3>
         ${isOwner || perms.includes('create:members') ? '<button class="btn btn-primary btn-sm" id="btn-invite-member"><iconify-icon icon="lucide:user-plus" width="14" height="14"></iconify-icon> Undang Anggota</button>' : ''}
       </div>
-      <div style="overflow-x:auto">
+      <div class="table-responsive">
         <table class="data-table">
           <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Aksi</th></tr></thead>
           <tbody>

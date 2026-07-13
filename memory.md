@@ -289,3 +289,25 @@ Checklist:
 - [ ] Settings nav tabs bisa di-scroll horizontal
 - [ ] Toast notification full-width di mobile
 - [ ] Tidak ada elemen yang overflow horizontal
+
+---
+
+## Realisasi Pembaruan Responsif (13 Juli 2026)
+
+Semua perbaikan responsivitas telah berhasil diimplementasikan dan diverifikasi menggunakan `npm run build`. Berikut detail perubahan yang dilakukan:
+
+1. **Perbaikan Masalah Horizontal Overflow (Penyebab Tampilan Geser & Terpotong)**:
+   - **Scrollable Kategori / Tab Bar**: Menambahkan aturan CSS di `index.css` agar element `.tabs` memiliki behavior `overflow-x: auto` dan `flex-wrap: nowrap` pada layar ≤768px. Ini mencegah kategori filter invoice menembus lebar layar (overflow) dan menyebabkan scrollbar horizontal pada body dokumen.
+   - **Optimalisasi Padding Spacing**: 
+     - Menambahkan aturan override media query untuk `.glass-card` di `index.css` agar padding mengecil ke `var(--space-base)` (16px) secara otomatis pada layar mobile/tablet (≤768px), menimpa inline styles bawaan.
+     - Memindahkan penyesuaian padding `.main-content` dan `.stat-card` di `layout.css` ke breakpoint `max-width: 768px` (sebelumnya hanya di 480px), agar area pembacaan konten di mobile lebih luas dan seragam.
+
+2. **Pembungkusan Tabel agar Responsif (`table-responsive`)**:
+   - **ReceiptList.js**: Membungkus tabel kuitansi dalam class `.table-responsive`.
+   - **DebtManagement.js**: Membungkus tabel hutang jatuh tempo, hutang mendatang, dan semua pengingat dalam class `.table-responsive`.
+   - **DocumentCreate.js**: Membungkus tabel item produk pembuatan tagihan (`#items-table`) dalam class `.table-responsive`.
+   - **CompanySettings.js**: Mengubah pembungkus overflow-x manual pada tabel anggota tim menjadi class standar `.table-responsive`.
+
+### Hasil Verifikasi
+- Aplikasi berhasil dibangun dengan aman menggunakan `npm run build` tanpa error.
+- Horizontal scrollbar pada level document body/root telah teratasi, menyelesaikan masalah pergeseran ke kiri dan pemotongan teks di device mobile seperti iPhone SE, iPhone 12 Pro, iPhone 14 Pro Max, dan Pixel 7.

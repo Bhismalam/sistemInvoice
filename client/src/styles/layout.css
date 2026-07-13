@@ -195,11 +195,13 @@ iconify-icon { display: inline-flex; vertical-align: middle; }
   .grid-4, .grid-3, .grid-2, .grid-sidebar {
     grid-template-columns: 1fr;
   }
+
+  /* Padding adjustments for mobile/tablet */
+  .main-content { padding: var(--space-base); }
+  .stat-card { padding: var(--space-base); }
 }
 
 @media (max-width: 480px) {
-  .main-content { padding: var(--space-base); }
   .page-title { font-size: 1.25rem; }
-  .stat-card { padding: var(--space-base); }
   .stat-card__value { font-size: 1.35rem; }
 }

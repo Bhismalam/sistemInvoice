@@ -126,6 +126,7 @@ export function renderDebtManagement(container, routeParams = {}) {
               <span><iconify-icon icon="lucide:alert-triangle" width="16" height="16"></iconify-icon></span> Jatuh Tempo (${data.overdue.length})
               <span class="text-danger" style="margin-left:auto;font-weight:700">${formatCurrency(data.overdue_amount)}</span>
             </h4>
+            <div class="table-responsive">
             <table class="data-table">
               <thead><tr>
                 <th>Invoice</th><th>Kontak</th><th>Total</th><th>Jatuh Tempo</th><th>Lewat</th><th></th>
@@ -145,6 +146,7 @@ export function renderDebtManagement(container, routeParams = {}) {
                 `).join('')}
               </tbody>
             </table>
+            </div>
           </div>
         ` : ''}
         
@@ -154,6 +156,7 @@ export function renderDebtManagement(container, routeParams = {}) {
               <span><iconify-icon icon="lucide:calendar" width="16" height="16"></iconify-icon></span> Mendatang (${data.upcoming.length})
               <span class="text-muted" style="margin-left:auto;font-weight:700">${formatCurrency(data.upcoming.reduce((s, d) => s + d.total, 0))}</span>
             </h4>
+            <div class="table-responsive">
             <table class="data-table">
               <thead><tr>
                 <th>Invoice</th><th>Kontak</th><th>Total</th><th>Jatuh Tempo</th><th>Sisa</th><th></th>
@@ -176,6 +179,7 @@ export function renderDebtManagement(container, routeParams = {}) {
                 `}).join('')}
               </tbody>
             </table>
+            </div>
           </div>
         ` : ''}
       `;
@@ -260,6 +264,7 @@ export function renderDebtManagement(container, routeParams = {}) {
           <h4 class="debt-section__title">
             <span><iconify-icon icon="lucide:clipboard-list" width="16" height="16"></iconify-icon></span> Semua Pengingat (${reminders.length})
           </h4>
+          <div class="table-responsive">
           <table class="data-table">
             <thead><tr><th>Dokumen</th><th>Kontak</th><th>Tipe</th><th>Tanggal</th><th>Status</th><th>Jumlah</th><th></th></tr></thead>
             <tbody>
@@ -277,6 +282,7 @@ export function renderDebtManagement(container, routeParams = {}) {
               }).join('')}
             </tbody>
           </table>
+          </div>
         </div>`;
       }
 

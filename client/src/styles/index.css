@@ -739,6 +739,23 @@ body.light-mode .toast-close:hover {
 
   /* Buttons: compact */
   .btn { padding: 8px 14px; font-size: 0.8rem; }
+
+  /* Tabs horizontal scrolling to prevent layout breakout */
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    max-width: 100%;
+  }
+  .tab-btn {
+    flex-shrink: 0;
+  }
+
+  /* Reduce glass-card padding on mobile to maximize content area */
+  .glass-card {
+    padding: var(--space-base) !important;
+  }
 }
 
 /* === RESPONSIVE: 480px === */
