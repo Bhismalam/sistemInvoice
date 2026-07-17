@@ -618,6 +618,26 @@ async function renderRolesTab(content, page) {
         </div>
       </div>
     </div>
+
+    <!-- Modal Tambah Role -->
+    <div id="add-role-modal" class="modal" style="display:none">
+      <div class="modal-content card" style="max-width:500px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
+          <h3><iconify-icon icon="lucide:shield-check" width="18" height="18" style="vertical-align:-3px"></iconify-icon> Tambah Role Baru</h3>
+          <button class="btn-icon" id="btn-close-add-role-modal">✕</button>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Nama Role</label>
+          <input type="text" class="form-input" id="add-role-name" placeholder="Masukkan nama role" required />
+        </div>
+
+        <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl);justify-content:flex-end">
+          <button class="btn btn-primary" id="btn-save-new-role"><iconify-icon icon="lucide:plus" width="16" height="16"></iconify-icon> Tambah Role</button>
+          <button class="btn" id="btn-cancel-add-role-modal">Batal</button>
+        </div>
+      </div>
+    </div>
   `;
 
   setupRoleEvents(page, roles, allPerms);
@@ -690,15 +710,65 @@ function setupRoleEvents(page, roles, allPerms) {
 
   // Add role
   if (page.querySelector('#btn-add-role')) {
-    page.querySelector('#btn-add-role').onclick = async () => {
-      const name = prompt('Masukkan nama role baru:');
-      if (!name) return;
+    page.querySelector('#btn-add-role').addEventListener('click', () => {
+      page.querySelector('#add-role-name').value = '';
+      page.querySelector('#add-role-modal').style.display = 'flex';
+      page.querySelector('#add-role-name').focus();
+    });
+  }
+
+  // Close Add Role Modal
+  const closeAddRoleModal = () => {
+    page.querySelector('#add-role-modal').style.display = 'none';
+  };
+  if (page.querySelector('#btn-close-add-role-modal')) {
+    page.querySelector('#btn-close-add-role-modal').onclick = closeAddRoleModal;
+  }
+  if (page.querySelector('#btn-cancel-add-role-modal')) {
+    page.querySelector('#btn-cancel-add-role-modal').onclick = closeAddRoleModal;
+  }
+
+  // Save New Role
+  if (page.querySelector('#btn-save-new-role')) {
+    page.querySelector('#btn-save-new-role').onclick = async () => {
+      const nameInput = page.querySelector('#add-role-name');
+      const name = nameInput.value.trim();
+      if (!name) {
+        showToast('Nama role tidak boleh kosong!', 'error');
+        return;
+      }
+
+      const btn = page.querySelector('#btn-save-new-role');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+
       try {
-        await api('/company/roles', { method: 'POST', body: { name, permissions: ['read:document', 'read:dashboard'] } });
+        await api('/company/roles', {
+          method: 'POST',
+          body: {
+            name,
+            permissions: ['read:document', 'read:dashboard']
+          }
+        });
         showToast('Role berhasil dibuat!', 'success');
+        closeAddRoleModal();
         renderRolesTab(page.querySelector('#company-settings-content'), page);
-      } catch (err) { showToast(err.message, 'error'); }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<iconify-icon icon="lucide:plus" width="16" height="16"></iconify-icon> Tambah Role';
+      }
     };
+  }
+
+  if (page.querySelector('#add-role-name')) {
+    page.querySelector('#add-role-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        page.querySelector('#btn-save-new-role').click();
+      }
+    });
   }
 
   // Delete role
